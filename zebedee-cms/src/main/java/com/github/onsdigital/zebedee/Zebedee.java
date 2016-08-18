@@ -8,17 +8,10 @@ import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.json.Credentials;
 import com.github.onsdigital.zebedee.json.Session;
 import com.github.onsdigital.zebedee.json.User;
-import com.github.onsdigital.zebedee.model.Collection;
-import com.github.onsdigital.zebedee.model.Collections;
-import com.github.onsdigital.zebedee.model.Content;
-import com.github.onsdigital.zebedee.model.KeyringCache;
-import com.github.onsdigital.zebedee.model.Permissions;
-import com.github.onsdigital.zebedee.model.RedirectTablePartialMatch;
-import com.github.onsdigital.zebedee.model.Sessions;
-import com.github.onsdigital.zebedee.model.Teams;
-import com.github.onsdigital.zebedee.model.Users;
+import com.github.onsdigital.zebedee.model.*;
 import com.github.onsdigital.zebedee.model.encryption.ApplicationKeys;
 import com.github.onsdigital.zebedee.model.publishing.PublishedCollections;
+import com.github.onsdigital.zebedee.persistence.dao.impl.FileUserRepository;
 import com.github.onsdigital.zebedee.reader.FileSystemContentReader;
 import com.github.onsdigital.zebedee.verification.VerificationAgent;
 
@@ -28,8 +21,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logError;
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logDebug;
+import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logError;
 
 public class Zebedee {
 
@@ -37,7 +30,6 @@ public class Zebedee {
     public static final String COLLECTIONS = "collections";
     static final String PUBLISHED_COLLECTIONS = "publish-log";
     static final String ZEBEDEE = "zebedee";
-    static final String USERS = "users";
     static final String SESSIONS = "sessions";
     static final String PERMISSIONS = "permissions";
     static final String TEAMS = "teams";
@@ -58,25 +50,23 @@ public class Zebedee {
 
     public final DataIndex dataIndex;
 
-    public Zebedee(Path path, boolean useVerificationAgent) {
+    public Zebedee(Path path, boolean useVerificationAgent) throws IOException {
 
         // Validate the directory:
         this.path = path;
         Path published = path.resolve(PUBLISHED);
         Path collections = path.resolve(COLLECTIONS);
         Path publishedCollections = path.resolve(PUBLISHED_COLLECTIONS);
-        Path users = path.resolve(USERS);
         Path sessions = path.resolve(SESSIONS);
         Path permissions = path.resolve(PERMISSIONS);
         Path teams = path.resolve(TEAMS);
         Path applicationKeysPath = path.resolve(APPLICATION_KEYS);
 
-        if (!Files.exists(published) || !Files.exists(collections) || !Files.exists(users) || !Files.exists(sessions) || !Files.exists(permissions) || !Files.exists(teams)) {
+        if (!Files.exists(published) || !Files.exists(collections) || !Files.exists(sessions) || !Files.exists(permissions) || !Files.exists(teams)) {
             throw new IllegalArgumentException(
                     "This folder doesn't look like a zebedee folder: "
                             + path.toAbsolutePath());
         }
-
 
         // Create published and ensure redirect
         this.published = new Content(published);
@@ -98,7 +88,7 @@ public class Zebedee {
 
         this.collections = new Collections(collections, this);
         this.publishedCollections = new PublishedCollections(publishedCollections);
-        this.users = new Users(users, this);
+        this.users = new Users(this, new FileUserRepository(path));
         this.keyringCache = new KeyringCache(this);
         this.applicationKeys = new ApplicationKeys(applicationKeysPath);
         this.sessions = new Sessions(sessions);
@@ -111,7 +101,7 @@ public class Zebedee {
         }
     }
 
-    public Zebedee(Path path) {
+    public Zebedee(Path path) throws IOException {
         this(path, true);
     }
 
@@ -136,9 +126,6 @@ public class Zebedee {
         }
         if (!Files.exists(path.resolve(COLLECTIONS))) {
             Files.createDirectory(path.resolve(COLLECTIONS));
-        }
-        if (!Files.exists(path.resolve(USERS))) {
-            Files.createDirectory(path.resolve(USERS));
         }
         if (!Files.exists(path.resolve(SESSIONS))) {
             Files.createDirectory(path.resolve(SESSIONS));

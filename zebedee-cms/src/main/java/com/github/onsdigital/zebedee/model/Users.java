@@ -1,39 +1,33 @@
 package com.github.onsdigital.zebedee.model;
 
-import com.github.davidcarboni.restolino.json.Serialiser;
 import com.github.onsdigital.zebedee.Zebedee;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.ConflictException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.json.*;
-import com.google.gson.JsonSyntaxException;
+import com.github.onsdigital.zebedee.persistence.dao.UserRepository;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.DirectoryStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logDebug;
-import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logError;
 
 /**
  * Created by david on 12/03/2015.
- * <p/>
+ * <p>
  * Class to handle user management functions
  */
 public class Users {
-    private Path users;
     private Zebedee zebedee;
+    private UserRepository userRepository;
 
-    public Users(Path users, Zebedee zebedee) {
-        this.users = users;
+    public Users(Zebedee zebedee, UserRepository userRepository) {
         this.zebedee = zebedee;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -74,39 +68,6 @@ public class Users {
         zebedee.users.resetPassword(user, password, "system");
         zebedee.permissions.addEditor(user.email, null);
         zebedee.permissions.addAdministrator(user.email, null);
-    }
-
-    /**
-     * TODO: This is a temporary method and should be deleted once all users are set up with encryption.
-     * This is going to take a couple of releases moving through from develop to live/sandpit before we're all set.
-     *
-     * @param user     The user who has just logged in
-     * @param password The user's plaintext password
-     */
-    public static void migrateToEncryption(Zebedee zebedee, User user, String password) throws IOException {
-
-        // Update this user if necessary:
-        migrateUserToEncryption(zebedee, user, password);
-
-        int withKeyring = 0;
-        int withoutKeyring = 0;
-        UserList users = zebedee.users.listAll();
-        for (User otherUser : users) {
-            if (user.keyring() != null) {
-                withKeyring++;
-            } else {
-                // Migrate test users automatically:
-                if (migrateUserToEncryption(zebedee, otherUser, "Dou4gl") || migrateUserToEncryption(zebedee, otherUser, "password"))
-                    withKeyring++;
-                else
-                    withoutKeyring++;
-            }
-        }
-
-        logDebug("User info")
-                .addParameter("numberOfUsers", users.size())
-                .addParameter("withKeyRing", withKeyring)
-                .addParameter("withoutKeyRing", withoutKeyring).log();
     }
 
     /**
@@ -177,7 +138,7 @@ public class Users {
      * @throws IOException If a general filesystem error occurs.
      */
     public UserList list() throws IOException {
-        return zebedee.users.listAll();
+        return userRepository.getAllUsers();
     }
 
     /**
@@ -201,7 +162,7 @@ public class Users {
             throw new NotFoundException("User for email " + email + " not found");
         }
 
-        return read(email);
+        return userRepository.getUser(email);
     }
 
     /**
@@ -248,7 +209,7 @@ public class Users {
             result.inactive = true;
             result.temporaryPassword = true;
             result.lastAdmin = lastAdmin;
-            write(result);
+            userRepository.saveUser(result);
         }
 
         return result;
@@ -260,7 +221,7 @@ public class Users {
      * At present user email cannot be updated
      *
      * @param user
-     * @param updatedUser    - a user object with the new details  @return
+     * @param updatedUser - a user object with the new details  @return
      * @throws IOException
      * @throws UnauthorizedException - Session does not have update permissions
      * @throws NotFoundException     - user account does not exist
@@ -282,10 +243,6 @@ public class Users {
 
         // Update
         User updated = update(user, updatedUser, session.email);
-
-        // We'll allow changing the email at some point.
-        // It entails renaming the json file and checking
-        // that the new email doesn't already exist.
 
         return updated;
     }
@@ -324,7 +281,7 @@ public class Users {
 
             user.lastAdmin = lastAdmin;
 
-            write(user);
+            userRepository.saveUser(user);
         }
         return user;
     }
@@ -337,13 +294,13 @@ public class Users {
      * @throws IOException
      */
     public User updateKeyring(User user) throws IOException {
-        User updated = read(user.email);
+        User updated = userRepository.getUser(user.email);
         if (updated != null) {
             updated.keyring = user.keyring.clone();
 
             // Only set this to true if explicitly set:
             updated.inactive = BooleanUtils.isTrue(user.inactive);
-            write(updated);
+            userRepository.saveUser(updated);
         }
         return updated;
     }
@@ -368,8 +325,8 @@ public class Users {
             throw new NotFoundException("User " + user.email + " does not exist");
         }
 
-        Path path = userPath(user.email);
-        return Files.deleteIfExists(path);
+        userRepository.deleteUser(user.email);
+        return true;
     }
 
     /**
@@ -391,7 +348,7 @@ public class Users {
      * @throws IOException If a filesystem error occurs.
      */
     public boolean exists(String email) throws IOException {
-        return StringUtils.isNotBlank(email) && Files.exists(userPath(email));
+        return userRepository.userExists(email);
     }
 
     public boolean setPassword(Session session, Credentials credentials) throws IOException, UnauthorizedException, BadRequestException, NotFoundException {
@@ -406,7 +363,7 @@ public class Users {
             throw new BadRequestException("Please provide credentials (email, password[, oldPassword])");
         }
 
-        User user = read(credentials.email);
+        User user = userRepository.getUser(credentials.email);
 
         // If own user updating, ensure the old password is correct
         if (!zebedee.permissions.isAdministrator(session) && !user.authenticate(credentials.oldPassword)) {
@@ -430,7 +387,7 @@ public class Users {
                 KeyManager.transferKeyring(user.keyring, zebedee.keyringCache.get(session), originalKeyring.list());
 
             // Save the user
-            write(user);
+            userRepository.saveUser(user);
 
             result = true;
         }
@@ -455,7 +412,7 @@ public class Users {
             user.inactive = false;
             user.lastAdmin = user.email;
             user.temporaryPassword = false;
-            write(user);
+            userRepository.saveUser(user);
             result = true;
         }
 
@@ -477,7 +434,7 @@ public class Users {
         user.inactive = false;
         user.lastAdmin = adminEmail;
         user.temporaryPassword = true;
-        write(user);
+        userRepository.saveUser(user);
     }
 
     /**
@@ -490,80 +447,4 @@ public class Users {
         return user != null && StringUtils.isNoneBlank(user.email, user.name);
     }
 
-    /**
-     * Reads a user record from disk.
-     *
-     * @param email The identifier for the record to be read.
-     * @return The read user, if any.
-     * @throws IOException
-     */
-    private User read(String email) throws IOException {
-        User result = null;
-        if (exists(email)) {
-            Path userPath = userPath(email);
-            result = Serialiser.deserialise(userPath, User.class);
-        }
-        return result;
-    }
-
-    /**
-     * Writes a user record to disk.
-     *
-     * @param user The record to be written.
-     * @throws IOException If a filesystem error occurs.
-     */
-    private void write(User user) throws IOException {
-        user.email = normalise(user.email);
-        Path userPath = userPath(user.email);
-        Serialiser.serialise(userPath, user);
-    }
-
-    /**
-     * Generates a {@link java.nio.file.Path} for the given email address.
-     *
-     * @param email The email address to generate a {@link java.nio.file.Path} for.
-     * @return A {@link java.nio.file.Path} to the specified user record.
-     */
-    private Path userPath(String email) {
-        Path result = null;
-
-        if (StringUtils.isNotBlank(email)) {
-            String userFileName = PathUtils.toFilename(normalise(email));
-            userFileName += ".json";
-            result = users.resolve(userFileName);
-        }
-
-        return result;
-    }
-
-    /**
-     * @param email An email address to be standardised.
-     * @return The given email, trimmed and lowercased.
-     */
-    private String normalise(String email) {
-        return StringUtils.lowerCase(StringUtils.trim(email));
-    }
-
-    /**
-     * Return a collection of all users registered in the system
-     *
-     * @return A list of all users.
-     */
-    public UserList listAll() throws IOException {
-        UserList result = new UserList();
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(users)) {
-            for (Path path : stream) {
-                if (!Files.isDirectory(path)) {
-                    try (InputStream input = Files.newInputStream(path)) {
-                        User user = Serialiser.deserialise(input, User.class);
-                        result.add(user);
-                    } catch (JsonSyntaxException e) {
-                        logError(e, "Error deserialising user").addParameter("path", path.toString()).log();
-                    }
-                }
-            }
-        }
-
-        return result;
-    }
 }

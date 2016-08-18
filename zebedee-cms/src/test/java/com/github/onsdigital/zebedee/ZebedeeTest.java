@@ -55,7 +55,6 @@ public class ZebedeeTest {
 		assertTrue(Files.exists(expectedPath));
 		assertTrue(Files.exists(expectedPath.resolve(Zebedee.PUBLISHED)));
         assertTrue(Files.exists(expectedPath.resolve(Zebedee.COLLECTIONS)));
-        assertTrue(Files.exists(expectedPath.resolve(Zebedee.USERS)));
 	}
 
 	@Test
@@ -130,7 +129,7 @@ public class ZebedeeTest {
 	}
 
 	@Test
-	public void toUri_givenCollectionFilePath_shouldReturnUri() {
+	public void toUri_givenCollectionFilePath_shouldReturnUri() throws IOException {
 		// Given
 		// a zebedee implementation
 		Zebedee zebedee = new Zebedee(expectedPath);
@@ -153,7 +152,7 @@ public class ZebedeeTest {
 	}
 
 	@Test
-	public void toUri_givenCollectionFilePathAsString_shouldReturnUri() {
+	public void toUri_givenCollectionFilePathAsString_shouldReturnUri() throws IOException {
 		// Given
 		// a zebedee implementation
 		Zebedee zebedee = new Zebedee(expectedPath);
@@ -176,7 +175,7 @@ public class ZebedeeTest {
 	}
 
 	@Test
-	public void toUri_givenPathOutsideZebedee_shouldReturnNull() {
+	public void toUri_givenPathOutsideZebedee_shouldReturnNull() throws IOException {
 		// Given
 		// a zebedee implementation
 		Zebedee zebedee = new Zebedee(expectedPath);

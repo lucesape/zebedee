@@ -32,6 +32,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
@@ -99,6 +102,109 @@ public class CollectionTest {
         assertNotNull(createdCollectionDescription);
         assertEquals(collectionDescription.name, createdCollectionDescription.name);
         assertEquals(collectionDescription.publishDate, createdCollectionDescription.publishDate);
+    }
+
+    @Test
+    public void createCollectionShouldDistributeCollectionKeysToUsers() throws Exception {
+
+        Session adminSession = zebedee.openSession(builder.administratorCredentials);
+
+        List<String> userIds = new ArrayList<>();
+
+        userIds.add(createTestPublisher(adminSession));
+        userIds.add(createTestPublisher(adminSession));
+
+        // Given two collections created at the same time by different publishers
+        String publisher1Id = Random.id();
+        createTestUser(publisher1Id);
+        Session publisher1Session = createSession(publisher1Id);
+        zebedee.permissions.addEditor(publisher1Id, adminSession);
+        userIds.add(publisher1Id);
+
+        String publisher2Id = Random.id();
+        createTestUser(publisher2Id);
+        Session publisher2Session = createSession(publisher2Id);
+        zebedee.permissions.addEditor(publisher2Id, adminSession);
+        userIds.add(publisher2Id);
+
+        ExecutorService executorService = Executors.newCachedThreadPool();
+
+        List<Callable<String>> callables = new ArrayList<>();
+
+        // create runnable to create first collection
+        QueueCreateCollectionTask(publisher1Session, callables);
+        QueueCreateCollectionTask(publisher2Session, callables);
+
+        int expectedNumberOfCollectionKeys = callables.size() + 1; // a collection is already created in setup.
+
+        // execute the collection creates sequentially
+//        for (Callable<String> callable : callables) {
+//            Future<String> future = executorService.submit(callable);
+//            future.get();
+//        }
+
+//         create all the collections at once.
+        executorService.invokeAll(callables);
+
+        CollectionDescription collection2 = new CollectionDescription();
+        collection2.name = Random.id();
+        Collection.create(collection2, zebedee, publisher2Session);
+
+        for (String userId : userIds) {
+            User user = zebedee.users.get(userId);
+            System.out.println("size = " + user.keyring.size());
+            System.out.println("expectedNumberOfCollectionKeys = " + expectedNumberOfCollectionKeys);
+            assertEquals(expectedNumberOfCollectionKeys, user.keyring.size());
+        }
+
+        // When we query the publishers keyring
+
+        // Then each user should have all the expected keys
+
+    }
+
+    public void QueueCreateCollectionTask(Session publisher2Session, List<Callable<String>> callables) {
+        // create runnable to create second collection
+        callables.add(() -> {
+            CollectionDescription collection = new CollectionDescription();
+            collection.name = Random.id();
+            System.out.println("creating collection " + collection.name);
+            try {
+                Collection.create(collection, zebedee, publisher2Session);
+            } catch (IOException | ZebedeeException e) {
+                e.printStackTrace();
+            }
+            return "";
+        });
+    }
+
+    public String createTestPublisher(Session adminSession) throws IOException, NotFoundException, BadRequestException, UnauthorizedException {
+        String publisherId = Random.id();
+        createTestUser(publisherId);
+        createSession(publisherId);
+        zebedee.permissions.addEditor(publisherId, adminSession);
+        return publisherId;
+    }
+
+    public Session createSession(String publisher1Id) throws IOException, NotFoundException, BadRequestException {
+        // create session
+        Credentials credentials = new Credentials();
+        credentials.email = publisher1Id;
+        credentials.password = publisher1Id;
+        credentials.oldPassword = publisher1Id;
+        return zebedee.openSession(credentials);
+    }
+
+    public User createTestUser(String publisher1Id) throws IOException {
+        User publisher1 = new User();
+        publisher1.name = publisher1Id;
+        publisher1.email = publisher1Id;
+
+        // create user and set password to create a new keyring.
+        zebedee.users.create(publisher1, builder.administrator.email);
+        publisher1.resetPassword(publisher1Id); // have to reset password to create a keyring.
+        zebedee.users.update(publisher1, publisher1, "");
+        return publisher1;
     }
 
     @Test
@@ -642,7 +748,7 @@ public class CollectionTest {
     }
 
     @Test(expected = UnauthorizedException.class)
-    public void shouldNotReviewAsPublisher() throws IOException, ZebedeeException{
+    public void shouldNotReviewAsPublisher() throws IOException, ZebedeeException {
 
         // Given
         // The content exists, has been edited and complete by publisher1:
@@ -778,7 +884,7 @@ public class CollectionTest {
     }
 
     @Test(expected = BadRequestException.class)
-    public void shouldNotReviewIfAlreadyReviewed() throws IOException, ZebedeeException{
+    public void shouldNotReviewIfAlreadyReviewed() throws IOException, ZebedeeException {
 
         // Given
         // The content already exists:

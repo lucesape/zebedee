@@ -11,6 +11,7 @@ import com.github.onsdigital.zebedee.json.*;
 import com.github.onsdigital.zebedee.json.serialiser.IsoDateSerializer;
 import com.github.onsdigital.zebedee.model.Collection;
 import com.github.onsdigital.zebedee.model.PathUtils;
+import com.github.onsdigital.zebedee.persistence.dao.impl.FileUserRepository;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.math3.distribution.NormalDistribution;
 
@@ -107,7 +108,7 @@ public class Builder {
         contentUris.add(contentUri);
 
         // A couple of users:
-        Path users = zebedee.resolve(Zebedee.USERS);
+        Path users = zebedee.resolve(FileUserRepository.USERS_DIR);
         Files.createDirectories(users);
 
         administrator = clone(administratorTemplate);

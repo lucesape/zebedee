@@ -57,9 +57,6 @@ public class Login {
             return "Authentication failed.";
         }
 
-        // Temponary whilst encryption is being put in place.
-        // This can be removed once all users have keyrings.
-        com.github.onsdigital.zebedee.model.Users.migrateToEncryption(Root.zebedee, user, credentials.password);
         com.github.onsdigital.zebedee.model.Users.cleanupCollectionKeys(Root.zebedee, user);
 
         if (BooleanUtils.isTrue(user.temporaryPassword)) {
