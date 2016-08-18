@@ -11,7 +11,6 @@ import com.google.gson.JsonSyntaxException;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.DirectoryStream;
@@ -19,7 +18,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logDebug;
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logError;
@@ -480,18 +478,6 @@ public class Users {
         user.lastAdmin = adminEmail;
         user.temporaryPassword = true;
         write(user);
-    }
-
-    private void refreshKeyring(Session session, Keyring keyring, Keyring originalKeyring) throws NotFoundException, BadRequestException, IOException {
-        Keyring adminKeyring = zebedee.keyringCache.get(session);
-
-        Set<String> collections = originalKeyring.list();
-        for (String collectionId : collections) {
-            SecretKey key = adminKeyring.get(collectionId);
-            if (key != null) {
-                keyring.put(collectionId, key);
-            }
-        }
     }
 
     /**
