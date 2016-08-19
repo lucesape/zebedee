@@ -74,13 +74,13 @@ public class Users {
      * Remove keys for collections that no longer exist.
      */
     public static void cleanupCollectionKeys(Zebedee zebedee, User user) throws IOException {
-        if (user.keyring != null) {
+        if (user.getKeyring() != null) {
 
             List<String> keysToRemove = new ArrayList<>();
 
             Collections.CollectionList collections = zebedee.collections.list();
 
-            for (String key : user.keyring.list()) {
+            for (String key : user.getKeyring().list()) {
                 boolean keyIsValid = false;
 
                 if (zebedee.applicationKeys.containsKey(key)) {
@@ -100,7 +100,7 @@ public class Users {
 
             for (String key : keysToRemove) {
                 logDebug("Removing stale key").addParameter("key", key).log();
-                user.keyring.remove(key);
+                user.getKeyring().remove(key);
             }
 
             if (keysToRemove.size() > 0)
@@ -119,7 +119,7 @@ public class Users {
      */
     private static boolean migrateUserToEncryption(Zebedee zebedee, User user, String password) throws IOException {
         boolean result = false;
-        if (user.keyring() == null && user.authenticate(password)) {
+        if (user.getKeyring() == null && user.authenticate(password)) {
             // The keyring has not been generated yet,
             // so reset the password to the current password
             // in order to generate a keyring and associated key pair:
@@ -296,7 +296,7 @@ public class Users {
     public User updateKeyring(User user) throws IOException {
         User updated = userRepository.getUser(user.email);
         if (updated != null) {
-            updated.keyring = user.keyring.clone();
+            updated.setKeyring(user.getKeyring().clone());
 
             // Only set this to true if explicitly set:
             updated.inactive = BooleanUtils.isTrue(user.inactive);
@@ -378,13 +378,13 @@ public class Users {
 
             // Grab current keyring (null if this is system setup)
             Keyring originalKeyring = null;
-            if (user.keyring != null) originalKeyring = user.keyring.clone();
+            if (user.getKeyring() != null) originalKeyring = user.getKeyring().clone();
 
             resetPassword(user, credentials.password, session.email);
 
             // Restore the user keyring (or not if this is system setup)
             if (originalKeyring != null)
-                KeyManager.transferKeyring(user.keyring, zebedee.keyringCache.get(session), originalKeyring.list());
+                KeyManager.transferKeyring(user.getKeyring(), zebedee.keyringCache.get(session), originalKeyring.list());
 
             // Save the user
             userRepository.saveUser(user);

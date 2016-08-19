@@ -152,9 +152,9 @@ public class CollectionTest {
 
         for (String userId : userIds) {
             User user = zebedee.users.get(userId);
-            System.out.println("size = " + user.keyring.size());
+            System.out.println("size = " + user.getKeyring().size());
             System.out.println("expectedNumberOfCollectionKeys = " + expectedNumberOfCollectionKeys);
-            assertEquals(expectedNumberOfCollectionKeys, user.keyring.size());
+            assertEquals(expectedNumberOfCollectionKeys, user.getKeyring().size());
         }
 
         // When we query the publishers keyring

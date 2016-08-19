@@ -96,10 +96,10 @@ public class KeyManager {
      */
     public static void assignKeyToUser(Zebedee zebedee, User user, String keyIdentifier, SecretKey key) throws IOException {
         // Escape in case user keyring has not been generated
-        if (user.keyring == null) return;
+        if (user.getKeyring() == null) return;
 
         // Add the key to the user keyring and save
-        user.keyring.put(keyIdentifier, key);
+        user.getKeyring().put(keyIdentifier, key);
         zebedee.users.updateKeyring(user);
 
         // If the user is logged in assign the key to their cached keyring
@@ -126,10 +126,10 @@ public class KeyManager {
      */
     private static void removeKeyFromUser(Zebedee zebedee, User user, String keyIdentifier) throws IOException {
         // Escape in case user keyring has not been generated
-        if (user.keyring == null) return;
+        if (user.getKeyring() == null) return;
 
         // Remove the key from the users keyring and save
-        user.keyring.remove(keyIdentifier);
+        user.getKeyring().remove(keyIdentifier);
         zebedee.users.updateKeyring(user);
 
         // If the user is logged in remove the key from their cached keyring

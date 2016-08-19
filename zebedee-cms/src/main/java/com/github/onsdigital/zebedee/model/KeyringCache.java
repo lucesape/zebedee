@@ -32,15 +32,15 @@ public class KeyringCache {
      * @throws IOException If a general error occurs.
      */
     public void put(User user, Session session) throws IOException {
-        if (user != null && user.keyring() != null && user.keyring().isUnlocked()) {
+        if (user != null && user.getKeyring() != null && user.getKeyring().isUnlocked()) {
             if (session != null) {
                 // add the keyring by session
-                keyringMap.put(session, user.keyring());
+                keyringMap.put(session, user.getKeyring());
 
                 // populate the scheduler keyring
-                for (String collectionId : user.keyring.list()) {
+                for (String collectionId : user.getKeyring().list()) {
                     if (!schedulerCache.containsKey(collectionId))
-                        schedulerCache.put(collectionId, user.keyring.get(collectionId));
+                        schedulerCache.put(collectionId, user.getKeyring().get(collectionId));
                 }
             }
         }

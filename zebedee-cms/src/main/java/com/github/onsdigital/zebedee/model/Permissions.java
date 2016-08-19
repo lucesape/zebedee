@@ -204,7 +204,7 @@ public class Permissions {
      */
     public boolean canEdit(User user, CollectionDescription collectionDescription) throws IOException {
         if (collectionDescription.isEncrypted) {
-            return canEdit(user.email) && user.keyring.list().contains(collectionDescription.id);
+            return canEdit(user.email) && user.getKeyring().list().contains(collectionDescription.id);
         } else {
             return canEdit(user.email);
         }
@@ -570,8 +570,8 @@ public class Permissions {
     private void updateKeyring(Session session, String email, CollectionOwner collectionOwner)
             throws IOException, NotFoundException, BadRequestException {
         User user = zebedee.users.get(email);
-        if (session != null && user.keyring != null) {
-            KeyManager.transferKeyring(user.keyring, zebedee.keyringCache.get(session), collectionOwner);
+        if (session != null && user.getKeyring() != null) {
+            KeyManager.transferKeyring(user.getKeyring(), zebedee.keyringCache.get(session), collectionOwner);
             zebedee.users.updateKeyring(user);
         }
     }

@@ -16,7 +16,7 @@ public class User extends UserSanitised {
     // to unlock the keyring, so we need to
     // manage these fields together.
     private String passwordHash;
-    public Keyring keyring;
+    private Keyring keyring;
 
     /**
      * Constructor for deserialisation.
@@ -75,8 +75,12 @@ public class User extends UserSanitised {
     /**
      * @return {@link #keyring}.
      */
-    public Keyring keyring() {
+    public Keyring getKeyring() {
         return keyring;
+    }
+
+    public void setKeyring(Keyring keyring) {
+        this.keyring = keyring;
     }
 
     @Override

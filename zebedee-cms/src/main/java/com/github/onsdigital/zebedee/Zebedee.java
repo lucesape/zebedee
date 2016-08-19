@@ -276,8 +276,8 @@ public class Zebedee {
         Session session = sessions.create(user);
 
         // Unlock and cache keyring
-        user.keyring.unlock(credentials.password);
-        applicationKeys.populateCacheFromUserKeyring(user.keyring);
+        user.getKeyring().unlock(credentials.password);
+        applicationKeys.populateCacheFromUserKeyring(user.getKeyring());
         keyringCache.put(user, session);
 
         // Return a session
