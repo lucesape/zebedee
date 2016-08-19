@@ -20,7 +20,7 @@ public class FileUserRepository implements UserRepository {
 
     public static final String USERS_DIR = "users";
 
-    private Path users;
+    private Path userDirectory;
 
     /**
      * Create a new instance using the given root directory.
@@ -29,7 +29,7 @@ public class FileUserRepository implements UserRepository {
      * @throws IOException
      */
     public FileUserRepository(Path root) throws IOException {
-        Path userDirectory = root.resolve(USERS_DIR);
+        userDirectory = root.resolve(USERS_DIR);
 
         if (!Files.exists(userDirectory)) {
             Files.createDirectory(userDirectory);
@@ -97,7 +97,7 @@ public class FileUserRepository implements UserRepository {
     @Override
     public UserList getAllUsers() throws IOException {
         UserList result = new UserList();
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(users)) {
+        try (DirectoryStream<Path> stream = Files.newDirectoryStream(userDirectory)) {
             for (Path path : stream) {
                 if (!Files.isDirectory(path)) {
                     try (InputStream input = Files.newInputStream(path)) {
@@ -125,7 +125,7 @@ public class FileUserRepository implements UserRepository {
         if (StringUtils.isNotBlank(email)) {
             String userFileName = PathUtils.toFilename(normalise(email));
             userFileName += ".json";
-            result = users.resolve(userFileName);
+            result = userDirectory.resolve(userFileName);
         }
 
         return result;
