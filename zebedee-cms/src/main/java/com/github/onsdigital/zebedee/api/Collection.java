@@ -6,10 +6,7 @@ import com.github.onsdigital.zebedee.exceptions.ConflictException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
-import com.github.onsdigital.zebedee.json.CollectionDescription;
-import com.github.onsdigital.zebedee.json.CollectionType;
-import com.github.onsdigital.zebedee.json.Keyring;
-import com.github.onsdigital.zebedee.json.Session;
+import com.github.onsdigital.zebedee.json.*;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.http.HttpStatus;
 
@@ -99,7 +96,7 @@ public class Collection {
             throw new UnauthorizedException("You are not authorised to create collections.");
         }
 
-        Keyring keyring = Root.zebedee.keyringCache.get(session);
+        KeyringReader keyring = Root.zebedee.keyringCache.get(session);
         if (keyring == null) {
             throw new UnauthorizedException("Keyring is not initialised.");
         }

@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.Key;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -570,9 +571,7 @@ public class Permissions {
     private void updateKeyring(Session session, String email, CollectionOwner collectionOwner)
             throws IOException, NotFoundException, BadRequestException {
         User user = zebedee.users.get(email);
-        if (session != null && user.getKeyring() != null) {
-            KeyManager.transferKeyring(user.getKeyring(), zebedee.keyringCache.get(session), collectionOwner);
-            zebedee.users.updateKeyring(user);
-        }
+        Set<Key> keysToAdd = KeyManager.determineKeysToAdd(zebedee.keyringCache.get(session), collectionOwner);
+        zebedee.users.addKeysToUser(user, keysToAdd);
     }
 }

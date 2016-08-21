@@ -113,7 +113,6 @@ public class Root {
 
         loadExistingCollectionsIntoScheduler();
         initialiseCsdbImportKeys();
-        indexPublishedCollections();
         cleanupStaleCollectionKeys();
     }
 
@@ -141,20 +140,12 @@ public class Root {
             UserList users = zebedee.users.list();
 
             for (User user : users) {
-                com.github.onsdigital.zebedee.model.Users.cleanupCollectionKeys(zebedee, user);
+                zebedee.users.cleanupCollectionKeys(zebedee, user);
             }
 
         } catch (IOException e) {
             logError(e).log();
         }
-    }
-
-    private static void indexPublishedCollections() {
-//        try {
-//            zebedee.publishedCollections.init(ElasticSearchClient.getClient());
-//        } catch (IOException e) {
-//            Log.print(e, "Exception indexing published collections: %s", e.getMessage());
-//        }
     }
 
     private static void loadExistingCollectionsIntoScheduler() {

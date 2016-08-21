@@ -4,6 +4,7 @@ import com.github.onsdigital.zebedee.json.User;
 import com.github.onsdigital.zebedee.json.UserList;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * Interface for user persistence.
@@ -50,4 +51,6 @@ public interface UserRepository {
      * @throws IOException
      */
     void saveUser(User result) throws IOException;
+
+    User deleteUserKeys(List<String> keysToRemove);
 }

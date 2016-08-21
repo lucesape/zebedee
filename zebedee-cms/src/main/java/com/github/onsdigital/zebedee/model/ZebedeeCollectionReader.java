@@ -4,7 +4,7 @@ import com.github.onsdigital.zebedee.Zebedee;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
-import com.github.onsdigital.zebedee.json.Keyring;
+import com.github.onsdigital.zebedee.json.KeyringReader;
 import com.github.onsdigital.zebedee.json.Session;
 import com.github.onsdigital.zebedee.reader.CollectionReader;
 import com.github.onsdigital.zebedee.reader.ContentReader;
@@ -30,7 +30,7 @@ public class ZebedeeCollectionReader extends CollectionReader {
             throw new UnauthorizedException(getUnauthorizedMessage(session));
         }
 
-        Keyring keyring = zebedee.keyringCache.get(session);
+        KeyringReader keyring = zebedee.keyringCache.get(session);
         if (keyring == null) throw new UnauthorizedException("No keyring is available for " + session.email);
 
         SecretKey key = keyring.get(collection.description.id);

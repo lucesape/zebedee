@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logError;
 
@@ -70,6 +71,10 @@ public class FileUserRepository implements UserRepository {
         user.email = normalise(user.email);
         Path userPath = userPath(user.email);
         Serialiser.serialise(userPath, user);
+    }
+
+    public User deleteUserKeys(List<String> keysToRemove) {
+        return null;
     }
 
     /**

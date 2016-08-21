@@ -5,7 +5,7 @@ import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
-import com.github.onsdigital.zebedee.json.Keyring;
+import com.github.onsdigital.zebedee.json.KeyringReader;
 import com.github.onsdigital.zebedee.json.Session;
 import com.github.onsdigital.zebedee.json.User;
 import com.github.onsdigital.zebedee.model.csdb.CsdbImporter;
@@ -14,7 +14,10 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.crypto.SecretKey;
 import java.io.IOException;
+import java.security.Key;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logError;
@@ -98,6 +101,8 @@ public class KeyManager {
         // Escape in case user keyring has not been generated
         if (user.getKeyring() == null) return;
 
+        zebedee.users.addKeysToUser(user, );
+
         // Add the key to the user keyring and save
         user.getKeyring().put(keyIdentifier, key);
         zebedee.users.updateKeyring(user);
@@ -105,7 +110,7 @@ public class KeyManager {
         // If the user is logged in assign the key to their cached keyring
         Session session = zebedee.sessions.find(user.email);
         if (session != null) {
-            Keyring keyring = zebedee.keyringCache.get(session);
+            KeyringReader keyring = zebedee.keyringCache.get(session);
             try {
                 if (keyring != null)
                     keyring.put(keyIdentifier, key);
@@ -135,7 +140,7 @@ public class KeyManager {
         // If the user is logged in remove the key from their cached keyring
         Session session = zebedee.sessions.find(user.email);
         if (session != null) {
-            Keyring keyring = zebedee.keyringCache.get(session);
+            KeyringReader keyring = zebedee.keyringCache.get(session);
             try {
                 if (keyring != null)
                     keyring.remove(keyIdentifier);
@@ -146,58 +151,38 @@ public class KeyManager {
     }
 
     /**
-     * Transfer a set of secret keys from the source keyring to the target
-     *
-     * @param targetKeyring the keyring to be populated
-     * @param sourceKeyring the keyring to take keys from
-     * @param collectionIds the keys to transfer
+     * Given a source keyring - determine what keys should belong to the given collection owner.
+     * @param sourceKeyring
+     * @param collectionOwner
+     * @return
      * @throws NotFoundException
      * @throws BadRequestException
      * @throws IOException
      */
-    public static void transferKeyring(Keyring targetKeyring, Keyring sourceKeyring, Set<String> collectionIds) throws NotFoundException, BadRequestException, IOException {
-
-        for (String collectionId : collectionIds) {
-            SecretKey key = sourceKeyring.get(collectionId);
-            if (key != null) {
-                targetKeyring.put(collectionId, key);
-            }
-        }
-    }
-
-    /**
-     * Transfer all secret keys from the source keyring to the target
-     *
-     * @param targetKeyring the keyring to be populated
-     * @param sourceKeyring the keyring to take keys from
-     * @throws NotFoundException
-     * @throws BadRequestException
-     * @throws IOException
-     */
-    public static void transferKeyring(Keyring targetKeyring, Keyring sourceKeyring, CollectionOwner collectionOwner)
+    public static Map<String, Key> determineKeysToAdd(KeyringReader sourceKeyring, CollectionOwner collectionOwner)
             throws NotFoundException, BadRequestException, IOException {
-        Set<String> collectionIds = new HashSet<>();
+        Map<String, Key> keys = new HashMap<>();
 
         sourceKeyring.list()
                 .stream()
                 .forEach(collectionId -> {
                     if (StringUtils.equals(collectionId, CsdbImporter.APPLICATION_KEY_ID)) {
                         // csdb-import is a special case always add this.
-                        collectionIds.add(collectionId);
+                        keys.put(collectionId, sourceKeyring.get(collectionId));
                     } else {
                         Collection collection = getCollection(collectionId);
                         if (collection != null
                                 && collection.description.collectionOwner != null
                                 && collection.description.collectionOwner.equals(collectionOwner)) {
-                            collectionIds.add(collectionId);
+                            keys.put(collectionId, sourceKeyring.get(collectionId));
                         } else {
                             if (CollectionOwner.PUBLISHING_SUPPORT.equals(collectionOwner)) {
-                                collectionIds.add(collectionId);
+                                keys.put(collectionId, sourceKeyring.get(collectionId));
                             }
                         }
                     }
                 });
-        transferKeyring(targetKeyring, sourceKeyring, collectionIds);
+        return keys;
     }
 
     private static boolean userShouldHaveKey(Zebedee zebedee, User user, Collection collection) throws IOException {

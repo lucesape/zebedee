@@ -7,12 +7,11 @@ import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.json.*;
 import com.github.onsdigital.zebedee.persistence.dao.UserRepository;
-import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.security.Key;
+import java.util.*;
 
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logDebug;
 
@@ -73,7 +72,7 @@ public class Users {
     /**
      * Remove keys for collections that no longer exist.
      */
-    public static void cleanupCollectionKeys(Zebedee zebedee, User user) throws IOException {
+    public void cleanupCollectionKeys(Zebedee zebedee, User user) throws IOException {
         if (user.getKeyring() != null) {
 
             List<String> keysToRemove = new ArrayList<>();
@@ -98,13 +97,7 @@ public class Users {
                 }
             }
 
-            for (String key : keysToRemove) {
-                logDebug("Removing stale key").addParameter("key", key).log();
-                user.getKeyring().remove(key);
-            }
-
-            if (keysToRemove.size() > 0)
-                zebedee.users.update(user, user, user.lastAdmin);
+            userRepository.deleteUserKeys(keysToRemove);
         }
     }
 
@@ -287,25 +280,6 @@ public class Users {
     }
 
     /**
-     * Save the user file after a keyring update
-     *
-     * @param user
-     * @return
-     * @throws IOException
-     */
-    public User updateKeyring(User user) throws IOException {
-        User updated = userRepository.getUser(user.email);
-        if (updated != null) {
-            updated.setKeyring(user.getKeyring().clone());
-
-            // Only set this to true if explicitly set:
-            updated.inactive = BooleanUtils.isTrue(user.inactive);
-            userRepository.saveUser(updated);
-        }
-        return updated;
-    }
-
-    /**
      * Delete a user account
      *
      * @param session - an admin user session
@@ -377,15 +351,22 @@ public class Users {
             // Administrator reset, or system setup
 
             // Grab current keyring (null if this is system setup)
-            Keyring originalKeyring = null;
+            KeyringReader originalKeyring = null;
             if (user.getKeyring() != null) originalKeyring = user.getKeyring().clone();
 
             resetPassword(user, credentials.password, session.email);
 
             // Restore the user keyring (or not if this is system setup)
-            if (originalKeyring != null)
-                KeyManager.transferKeyring(user.getKeyring(), zebedee.keyringCache.get(session), originalKeyring.list());
+            if (originalKeyring != null) {
 
+                KeyringReader keyringReader = zebedee.keyringCache.get(session);
+                Set<Key> keys = new HashSet<>();
+                for (String keyId : originalKeyring.list()) {
+                    keys.add(keyringReader.get(keyId));
+                }
+
+                this.addKeysToUser(user, keys);
+            }
             // Save the user
             userRepository.saveUser(user);
 
@@ -394,6 +375,7 @@ public class Users {
 
         return result;
     }
+
 
     /**
      * Changes the user's password and sets the account to active.
@@ -447,4 +429,6 @@ public class Users {
         return user != null && StringUtils.isNoneBlank(user.email, user.name);
     }
 
+    public void addKeysToUser(User user, Map<String, Key> keysToAdd) {
+    }
 }

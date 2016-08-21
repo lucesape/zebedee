@@ -3,7 +3,7 @@ package com.github.onsdigital.zebedee.model.encryption;
 import com.github.davidcarboni.cryptolite.KeyWrapper;
 import com.github.davidcarboni.cryptolite.Keys;
 import com.github.davidcarboni.restolino.json.Serialiser;
-import com.github.onsdigital.zebedee.json.Keyring;
+import com.github.onsdigital.zebedee.json.KeyringReader;
 import com.github.onsdigital.zebedee.json.encryption.StoredApplicationKeys;
 import com.github.onsdigital.zebedee.json.encryption.StoredKeyPair;
 
@@ -122,7 +122,7 @@ public class ApplicationKeys {
      * Decrypt any missing keys using the given unlocked keyring.
      * @param keyring
      */
-    public void populateCacheFromUserKeyring(Keyring keyring) {
+    public void populateCacheFromUserKeyring(KeyringReader keyring) {
 
         Set<String> keys = keyring.list();
 

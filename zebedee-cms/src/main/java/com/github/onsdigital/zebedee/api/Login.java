@@ -1,6 +1,7 @@
 package com.github.onsdigital.zebedee.api;
 
 import com.github.davidcarboni.restolino.framework.Api;
+import com.github.onsdigital.zebedee.Zebedee;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
@@ -57,7 +58,7 @@ public class Login {
             return "Authentication failed.";
         }
 
-        com.github.onsdigital.zebedee.model.Users.cleanupCollectionKeys(Root.zebedee, user);
+        Root.zebedee.users.cleanupCollectionKeys(Root.zebedee, user);
 
         if (BooleanUtils.isTrue(user.temporaryPassword)) {
             response.setStatus(HttpStatus.EXPECTATION_FAILED_417);

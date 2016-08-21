@@ -75,12 +75,8 @@ public class User extends UserSanitised {
     /**
      * @return {@link #keyring}.
      */
-    public Keyring getKeyring() {
+    public KeyringReader getKeyring() {
         return keyring;
-    }
-
-    public void setKeyring(Keyring keyring) {
-        this.keyring = keyring;
     }
 
     @Override

@@ -21,7 +21,7 @@ import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logInfo;
 /**
  * Represents the encryption keys needed for a user account to access collections.
  */
-public class Keyring implements Cloneable {
+public class Keyring implements Cloneable, KeyringReader {
 
     public transient Map<String, SecretKey> keys = new ConcurrentHashMap<>();
     // Key storage:
@@ -52,24 +52,13 @@ public class Keyring implements Cloneable {
         return result;
     }
 
+    @Override
     public int size() {
         return keyring.size();
     }
 
-    public Keyring emptyClone() {
-        Keyring keyring = new Keyring();
-        keyring.privateKey = this.privateKey;
-        keyring.publicKey = this.publicKey;
-        keyring.privateKeySalt = this.privateKeySalt;
-
-        Map<String, String> clonedKeyring = new ConcurrentHashMap<>();
-        keyring.keyring = clonedKeyring;
-
-        return keyring;
-    }
-
     @Override
-    public Keyring clone() {
+    public KeyringReader clone() {
         Keyring keyring = new Keyring();
         keyring.privateKey = this.privateKey;
         keyring.publicKey = this.publicKey;
@@ -89,6 +78,7 @@ public class Keyring implements Cloneable {
      *
      * @param password The password for the key.
      */
+    @Override
     public boolean unlock(String password) {
         boolean result;
 
@@ -143,6 +133,7 @@ public class Keyring implements Cloneable {
         keys.put(collectionId, collectionKey);
     }
 
+    @Override
     public SecretKey get(String collectionId) {
         SecretKey result = keys.get(collectionId);
 
@@ -182,6 +173,7 @@ public class Keyring implements Cloneable {
      *
      * @return An unmodifiable set of the key identifiers in the keyring.
      */
+    @Override
     public Set<String> list() {
         return java.util.Collections.unmodifiableSet(keyring.keySet());
     }
@@ -203,6 +195,7 @@ public class Keyring implements Cloneable {
         return result;
     }
 
+    @Override
     public boolean isUnlocked() {
         return keyPair != null;
     }
