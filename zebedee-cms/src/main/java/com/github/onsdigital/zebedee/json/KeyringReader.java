@@ -1,6 +1,7 @@
 package com.github.onsdigital.zebedee.json;
 
 import javax.crypto.SecretKey;
+import java.security.PublicKey;
 import java.util.Set;
 
 public interface KeyringReader extends Cloneable {
@@ -13,6 +14,8 @@ public interface KeyringReader extends Cloneable {
     SecretKey get(String collectionId);
 
     Set<String> list();
+
+    PublicKey getPublicKey();
 
     boolean isUnlocked();
 

@@ -2,7 +2,6 @@ package com.github.onsdigital.zebedee.model;
 
 import com.github.onsdigital.zebedee.Zebedee;
 import com.github.onsdigital.zebedee.json.Keyring;
-import com.github.onsdigital.zebedee.json.KeyringReader;
 import com.github.onsdigital.zebedee.json.Session;
 import com.github.onsdigital.zebedee.json.User;
 
@@ -18,7 +17,7 @@ public class KeyringCache {
 
     // Publisher keyring keeps all available secret keys available
     public Map<String, SecretKey> schedulerCache = new ConcurrentHashMap<>();
-    private Map<Session, KeyringReader> keyringMap = new ConcurrentHashMap<>();
+    private Map<Session, Keyring> keyringMap = new ConcurrentHashMap<>();
     private Zebedee zebedee;
 
     public KeyringCache(Zebedee zebedee) {
@@ -36,7 +35,7 @@ public class KeyringCache {
         if (user != null && user.getKeyring() != null && user.getKeyring().isUnlocked()) {
             if (session != null) {
                 // add the keyring by session
-                keyringMap.put(session, user.getKeyring());
+                keyringMap.put(session, (Keyring)user.getKeyring());
 
                 // populate the scheduler keyring
                 for (String collectionId : user.getKeyring().list()) {
@@ -54,8 +53,8 @@ public class KeyringCache {
      * @return The {@link Keyring} if present, or null.
      * @throws IOException If a general error occurs.
      */
-    public KeyringReader get(User user) throws IOException {
-        KeyringReader result = null;
+    public Keyring get(User user) throws IOException {
+        Keyring result = null;
 
         if (user != null) {
             Session session = zebedee.sessions.find(user.email);
@@ -74,8 +73,8 @@ public class KeyringCache {
      * @return The {@link Keyring} if present, or null.
      * @throws IOException If a general error occurs.
      */
-    public KeyringReader get(Session session) throws IOException {
-        KeyringReader result = null;
+    public Keyring get(Session session) throws IOException {
+        Keyring result = null;
 
         if (session != null) {
             result = keyringMap.get(session);

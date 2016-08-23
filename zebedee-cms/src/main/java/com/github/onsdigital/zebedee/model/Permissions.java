@@ -6,15 +6,16 @@ import com.github.onsdigital.zebedee.exceptions.*;
 import com.github.onsdigital.zebedee.json.*;
 import com.github.onsdigital.zebedee.persistence.CollectionEventType;
 
+import javax.crypto.SecretKey;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.Key;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -571,7 +572,7 @@ public class Permissions {
     private void updateKeyring(Session session, String email, CollectionOwner collectionOwner)
             throws IOException, NotFoundException, BadRequestException {
         User user = zebedee.users.get(email);
-        Set<Key> keysToAdd = KeyManager.determineKeysToAdd(zebedee.keyringCache.get(session), collectionOwner);
+        Map<String, SecretKey> keysToAdd = KeyManager.determineKeysToAdd(zebedee.keyringCache.get(session), collectionOwner);
         zebedee.users.addKeysToUser(user, keysToAdd);
     }
 }

@@ -3,8 +3,10 @@ package com.github.onsdigital.zebedee.persistence.dao;
 import com.github.onsdigital.zebedee.json.User;
 import com.github.onsdigital.zebedee.json.UserList;
 
+import javax.crypto.SecretKey;
 import java.io.IOException;
-import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Interface for user persistence.
@@ -52,5 +54,7 @@ public interface UserRepository {
      */
     void saveUser(User result) throws IOException;
 
-    User deleteUserKeys(List<String> keysToRemove);
+    User removeKeysFromUser(String email, Set<String> keysToRemove) throws IOException;
+
+    User addKeysToUser(String email, Map<String, SecretKey> keysToAdd) throws IOException;
 }

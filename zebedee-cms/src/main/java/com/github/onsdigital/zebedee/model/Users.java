@@ -9,9 +9,12 @@ import com.github.onsdigital.zebedee.json.*;
 import com.github.onsdigital.zebedee.persistence.dao.UserRepository;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.crypto.SecretKey;
 import java.io.IOException;
-import java.security.Key;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logDebug;
 
@@ -75,7 +78,7 @@ public class Users {
     public void cleanupCollectionKeys(Zebedee zebedee, User user) throws IOException {
         if (user.getKeyring() != null) {
 
-            List<String> keysToRemove = new ArrayList<>();
+            Set<String> keysToRemove = new HashSet<>();
 
             Collections.CollectionList collections = zebedee.collections.list();
 
@@ -97,7 +100,7 @@ public class Users {
                 }
             }
 
-            userRepository.deleteUserKeys(keysToRemove);
+            userRepository.removeKeysFromUser(user.email, keysToRemove);
         }
     }
 
@@ -360,15 +363,13 @@ public class Users {
             if (originalKeyring != null) {
 
                 KeyringReader keyringReader = zebedee.keyringCache.get(session);
-                Set<Key> keys = new HashSet<>();
+                Map<String,SecretKey> keys = new HashMap<>();
                 for (String keyId : originalKeyring.list()) {
-                    keys.add(keyringReader.get(keyId));
+                    keys.put(keyId, keyringReader.get(keyId));
                 }
 
                 this.addKeysToUser(user, keys);
             }
-            // Save the user
-            userRepository.saveUser(user);
 
             result = true;
         }
@@ -429,6 +430,11 @@ public class Users {
         return user != null && StringUtils.isNoneBlank(user.email, user.name);
     }
 
-    public void addKeysToUser(User user, Map<String, Key> keysToAdd) {
+    public void addKeysToUser(User user, Map<String, SecretKey> keysToAdd) throws IOException {
+        userRepository.addKeysToUser(user.email, keysToAdd);
+    }
+
+    public void removeKeysFromUser(User user, Set<String> keysToRemove) throws IOException {
+        userRepository.removeKeysFromUser(user.email, keysToRemove);
     }
 }

@@ -5,6 +5,7 @@ import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
+import com.github.onsdigital.zebedee.json.Keyring;
 import com.github.onsdigital.zebedee.json.KeyringReader;
 import com.github.onsdigital.zebedee.json.Session;
 import com.github.onsdigital.zebedee.json.User;
@@ -14,7 +15,6 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.crypto.SecretKey;
 import java.io.IOException;
-import java.security.Key;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -101,16 +101,14 @@ public class KeyManager {
         // Escape in case user keyring has not been generated
         if (user.getKeyring() == null) return;
 
-        zebedee.users.addKeysToUser(user, );
-
-        // Add the key to the user keyring and save
-        user.getKeyring().put(keyIdentifier, key);
-        zebedee.users.updateKeyring(user);
+        HashMap<String, SecretKey> keysToAdd = new HashMap<>();
+        keysToAdd.put(keyIdentifier, key);
+        zebedee.users.addKeysToUser(user, keysToAdd);
 
         // If the user is logged in assign the key to their cached keyring
         Session session = zebedee.sessions.find(user.email);
         if (session != null) {
-            KeyringReader keyring = zebedee.keyringCache.get(session);
+            Keyring keyring = zebedee.keyringCache.get(session);
             try {
                 if (keyring != null)
                     keyring.put(keyIdentifier, key);
@@ -133,14 +131,14 @@ public class KeyManager {
         // Escape in case user keyring has not been generated
         if (user.getKeyring() == null) return;
 
-        // Remove the key from the users keyring and save
-        user.getKeyring().remove(keyIdentifier);
-        zebedee.users.updateKeyring(user);
+        Set<String> keysToRemove = new HashSet<>();
+        keysToRemove.add(keyIdentifier);
+        zebedee.users.removeKeysFromUser(user, keysToRemove);
 
         // If the user is logged in remove the key from their cached keyring
         Session session = zebedee.sessions.find(user.email);
         if (session != null) {
-            KeyringReader keyring = zebedee.keyringCache.get(session);
+            Keyring keyring = zebedee.keyringCache.get(session);
             try {
                 if (keyring != null)
                     keyring.remove(keyIdentifier);
@@ -159,9 +157,13 @@ public class KeyManager {
      * @throws BadRequestException
      * @throws IOException
      */
-    public static Map<String, Key> determineKeysToAdd(KeyringReader sourceKeyring, CollectionOwner collectionOwner)
+    public static Map<String, SecretKey> determineKeysToAdd(KeyringReader sourceKeyring, CollectionOwner collectionOwner)
             throws NotFoundException, BadRequestException, IOException {
-        Map<String, Key> keys = new HashMap<>();
+        Map<String, SecretKey> keys = new HashMap<>();
+
+        if (sourceKeyring == null) {
+            return new HashMap<>();
+        }
 
         sourceKeyring.list()
                 .stream()

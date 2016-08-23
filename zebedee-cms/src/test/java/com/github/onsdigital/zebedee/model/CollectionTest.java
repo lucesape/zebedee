@@ -113,6 +113,8 @@ public class CollectionTest {
 
         userIds.add(createTestPublisher(adminSession));
         userIds.add(createTestPublisher(adminSession));
+        userIds.add(createTestPublisher(adminSession));
+        userIds.add(createTestPublisher(adminSession));
 
         // Given two collections created at the same time by different publishers
         String publisher1Id = Random.id();
@@ -132,6 +134,9 @@ public class CollectionTest {
         List<Callable<String>> callables = new ArrayList<>();
 
         // create runnable to create first collection
+        QueueCreateCollectionTask(publisher1Session, callables);
+        QueueCreateCollectionTask(publisher1Session, callables);
+        QueueCreateCollectionTask(publisher1Session, callables);
         QueueCreateCollectionTask(publisher1Session, callables);
         QueueCreateCollectionTask(publisher2Session, callables);
 

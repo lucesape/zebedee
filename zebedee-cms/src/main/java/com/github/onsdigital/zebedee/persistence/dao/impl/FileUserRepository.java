@@ -1,6 +1,7 @@
 package com.github.onsdigital.zebedee.persistence.dao.impl;
 
 import com.github.davidcarboni.restolino.json.Serialiser;
+import com.github.onsdigital.zebedee.json.Keyring;
 import com.github.onsdigital.zebedee.json.User;
 import com.github.onsdigital.zebedee.json.UserList;
 import com.github.onsdigital.zebedee.model.PathUtils;
@@ -8,12 +9,14 @@ import com.github.onsdigital.zebedee.persistence.dao.UserRepository;
 import com.google.gson.JsonSyntaxException;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.crypto.SecretKey;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logError;
 
@@ -67,14 +70,33 @@ public class FileUserRepository implements UserRepository {
      * @throws IOException If a filesystem error occurs.
      */
     @Override
-    public void saveUser(User user) throws IOException {
+    public synchronized void saveUser(User user) throws IOException {
         user.email = normalise(user.email);
         Path userPath = userPath(user.email);
         Serialiser.serialise(userPath, user);
     }
 
-    public User deleteUserKeys(List<String> keysToRemove) {
-        return null;
+    @Override
+    public synchronized User removeKeysFromUser(String email, Set<String> keysToRemove) throws IOException {
+        User user = getUser(email);
+        Keyring keyring = (Keyring) user.getKeyring();
+        for (String keyId : keysToRemove) {
+            keyring.remove(keyId);
+        }
+        saveUser(user);
+        return user;
+    }
+
+    @Override
+    public synchronized User addKeysToUser(String email, Map<String, SecretKey> keysToAdd) throws IOException {
+        User user = getUser(email);
+        Keyring keyring = (Keyring) user.getKeyring();
+        for (Map.Entry<String, SecretKey> entry : keysToAdd.entrySet()) {
+            keyring.put(entry.getKey(), entry.getValue());
+        }
+
+        saveUser(user);
+        return user;
     }
 
     /**

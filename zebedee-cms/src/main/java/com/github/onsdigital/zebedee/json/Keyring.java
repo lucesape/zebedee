@@ -181,6 +181,7 @@ public class Keyring implements Cloneable, KeyringReader {
     /**
      * @return The {@link PublicKey} for this keyring.
      */
+    @Override
     public PublicKey getPublicKey() {
         PublicKey result;
         if (keyPair != null) {
