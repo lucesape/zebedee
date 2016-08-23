@@ -17,14 +17,19 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logError;
 
 public class FileUserRepository implements UserRepository {
 
     public static final String USERS_DIR = "users";
-
     private Path userDirectory;
+
+    private static ConcurrentMap<Path, ReadWriteLock> userLocks = new ConcurrentHashMap<>();
 
     /**
      * Create a new instance using the given root directory.
@@ -50,6 +55,8 @@ public class FileUserRepository implements UserRepository {
     public void deleteUser(String email) throws IOException {
         Path path = userPath(email);
         Files.deleteIfExists(path);
+
+        userLocks.remove(path);
     }
 
     /**
@@ -70,32 +77,73 @@ public class FileUserRepository implements UserRepository {
      * @throws IOException If a filesystem error occurs.
      */
     @Override
-    public synchronized void saveUser(User user) throws IOException {
-        user.email = normalise(user.email);
+    public void saveUser(User user) throws IOException {
+
         Path userPath = userPath(user.email);
-        Serialiser.serialise(userPath, user);
+
+        getWriteLock(userPath);
+        try {
+            // get the user to ensure we have the latest copy of the keyring.
+            User savedUser = getUser(user.email);
+
+            if (savedUser != null && savedUser.getKeyring() != null) {
+
+                // add any missing keys to the in memory object.
+                Set<String> savedKeys = savedUser.getKeyring().list();
+                Set<String> keys = user.getKeyring().list();
+
+                for (String savedKey : savedKeys) {
+                    if (!keys.contains(savedKey)) {
+                        ((Keyring) user.getKeyring()).put(savedKey, savedUser.getKeyring().get(savedKey));
+                    }
+                }
+            }
+
+            Serialiser.serialise(userPath, user);
+
+        } finally {
+            userLocks.get(userPath).writeLock().unlock();
+        }
     }
 
     @Override
-    public synchronized User removeKeysFromUser(String email, Set<String> keysToRemove) throws IOException {
-        User user = getUser(email);
-        Keyring keyring = (Keyring) user.getKeyring();
-        for (String keyId : keysToRemove) {
-            keyring.remove(keyId);
+    public User removeKeysFromUser(String email, Set<String> keysToRemove) throws IOException {
+        Path userPath = userPath(email);
+        User user;
+
+        getWriteLock(userPath);
+        try {
+            user = getUser(email);
+            Keyring keyring = (Keyring) user.getKeyring();
+            for (String keyId : keysToRemove) {
+                keyring.remove(keyId);
+            }
+            saveUser(user);
+        } finally {
+            userLocks.get(userPath).writeLock().unlock();
         }
-        saveUser(user);
+
         return user;
     }
 
     @Override
-    public synchronized User addKeysToUser(String email, Map<String, SecretKey> keysToAdd) throws IOException {
-        User user = getUser(email);
-        Keyring keyring = (Keyring) user.getKeyring();
-        for (Map.Entry<String, SecretKey> entry : keysToAdd.entrySet()) {
-            keyring.put(entry.getKey(), entry.getValue());
+    public User addKeysToUser(String email, Map<String, SecretKey> keysToAdd) throws IOException {
+        Path userPath = userPath(email);
+        User user;
+        getWriteLock(userPath);
+        try {
+            user = getUser(email);
+            Keyring keyring = (Keyring) user.getKeyring();
+            for (Map.Entry<String, SecretKey> entry : keysToAdd.entrySet()) {
+                keyring.put(entry.getKey(), entry.getValue());
+            }
+
+            saveUser(user);
+        } finally {
+            userLocks.get(userPath).writeLock().unlock();
         }
 
-        saveUser(user);
+
         return user;
     }
 
@@ -111,7 +159,13 @@ public class FileUserRepository implements UserRepository {
         User result = null;
         if (userExists(email)) {
             Path userPath = userPath(email);
-            result = Serialiser.deserialise(userPath, User.class);
+
+            getReadLock(userPath);
+            try {
+                result = Serialiser.deserialise(userPath, User.class);
+            } finally {
+                userLocks.get(userPath).readLock().unlock();
+            }
         }
         return result;
     }
@@ -124,14 +178,19 @@ public class FileUserRepository implements UserRepository {
     @Override
     public UserList getAllUsers() throws IOException {
         UserList result = new UserList();
+
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(userDirectory)) {
             for (Path path : stream) {
                 if (!Files.isDirectory(path)) {
+
+                    getReadLock(path);
                     try (InputStream input = Files.newInputStream(path)) {
                         User user = Serialiser.deserialise(input, User.class);
                         result.add(user);
                     } catch (JsonSyntaxException e) {
                         logError(e, "Error deserialising user").addParameter("path", path.toString()).log();
+                    } finally {
+                        userLocks.get(path).readLock().unlock();
                     }
                 }
             }
@@ -164,5 +223,15 @@ public class FileUserRepository implements UserRepository {
      */
     private String normalise(String email) {
         return StringUtils.lowerCase(StringUtils.trim(email));
+    }
+
+    private void getWriteLock(Path userPath) {
+        userLocks.putIfAbsent(userPath, new ReentrantReadWriteLock());
+        userLocks.get(userPath).writeLock().lock();
+    }
+
+    private void getReadLock(Path userPath) {
+        userLocks.putIfAbsent(userPath, new ReentrantReadWriteLock());
+        userLocks.get(userPath).readLock().lock();
     }
 }
