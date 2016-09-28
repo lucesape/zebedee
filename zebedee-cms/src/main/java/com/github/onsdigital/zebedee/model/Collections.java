@@ -21,6 +21,7 @@ import org.apache.commons.fileupload.FileItem;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.ProgressListener;
 import org.apache.commons.fileupload.servlet.ServletFileUpload;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -36,7 +37,9 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 import static com.github.onsdigital.zebedee.configuration.Configuration.getUnauthorizedMessage;
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logError;
@@ -77,6 +80,41 @@ public class Collections {
             }
         }
         return listing;
+    }
+
+    /**
+     * Return the collection id of the collection containing the given page URI.
+     * You can also pass in a collection ID of the current collection and it will be ignored.
+     * @param uri
+     * @param collectionName
+     * @throws IOException
+     */
+    public String getCollectionIdForUri(String uri, String collectionName) throws IOException, UnauthorizedException {
+
+        List<Path> collectionDirectoryPaths = Files.list(zebedee.getCollections().path)
+                .filter(path -> Files.isDirectory(path))
+                .collect(Collectors.toList());
+
+        for (Path collectionDirectoryPath : collectionDirectoryPaths) {
+
+            if (StringUtils.isNotEmpty(collectionName) && collectionDirectoryPath.getFileName().toString().equals(collectionName))
+                continue;
+
+            java.util.Collection<java.io.File> collectionFiles =
+                    FileUtils.listFiles(collectionDirectoryPath.toFile(), null, true);
+
+            for (File collectionFile : collectionFiles) {
+                Path path = collectionDirectoryPath.relativize(collectionFile.toPath());
+                String collectionFileUri = path
+                        .subpath(1, path.getNameCount()) // remove first segment, as it will be the collection folder (inprogress | complete | reviewed)
+                        .toString();
+
+                if (collectionFileUri.equals(uri))
+                    return collectionDirectoryPath.getFileName().toString();
+            }
+        }
+
+        return "";
     }
 
     /**

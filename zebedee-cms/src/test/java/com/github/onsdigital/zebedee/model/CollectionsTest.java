@@ -1007,6 +1007,22 @@ public class CollectionsTest {
         return collectionDescription;
     }
 
+    @Test
+    public void shouldFindCollectionIdForUri()
+            throws IOException, ZebedeeException {
+
+        // Given a file in the collection
+        String uri = "/this/is/a/file.json";
+        Collection collection = new Collection(builder.collections.get(0), zebedee);
+        collection.create(builder.publisher1.email, uri);
+
+        // When we attempt to find the collection the file belongs to
+        String collectionId = zebedee.getCollections().getCollectionIdForUri(uri, "");
+
+        // Then the collection id returned is that of the collection the URI belongs to.
+        assertEquals(collection.description.id, collectionId);
+    }
+
     public class UpdateCollection implements Runnable {
         public boolean failed = false;
         private Collection collection;
