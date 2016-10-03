@@ -41,7 +41,7 @@ public class CollectionHistoryTest extends ZebedeeAPIBaseTestCase {
 
         eventList = getCollectionHistoryDao().getCollectionEventHistory(COLLECTION_ID);
 
-        when(zebedeeCmsServiceMock.getSession(mockRequest))
+        when(zebedeeCmsServiceMock.getSession(requestMock))
                 .thenReturn(session);
         when(zebedeeCmsServiceMock.getPermissions())
                 .thenReturn(permissionsMock);
@@ -64,14 +64,14 @@ public class CollectionHistoryTest extends ZebedeeAPIBaseTestCase {
                 .thenReturn(true);
 
         com.github.onsdigital.zebedee.model.collection.audit.CollectionHistory result
-                = api.getCollectionEventHistory(mockRequest, mockResponse);
+                = api.getCollectionEventHistory(requestMock, responseMock);
 
         com.github.onsdigital.zebedee.model.collection.audit.CollectionHistory expectedResult =
                 new com.github.onsdigital.zebedee.model.collection.audit.CollectionHistory(eventList);
 
         assertThat(result, equalTo(expectedResult));
 
-        verify(zebedeeCmsServiceMock, times(1)).getSession(mockRequest);
+        verify(zebedeeCmsServiceMock, times(1)).getSession(requestMock);
         verify(zebedeeCmsServiceMock, times(1)).getPermissions();
         verify(permissionsMock, times(1)).canEdit(session.email);
         //verify(mockDao, times(1)).getCollectionEventHistory(COLLECTION_ID);
@@ -85,12 +85,12 @@ public class CollectionHistoryTest extends ZebedeeAPIBaseTestCase {
      */
     @Test(expected = UnauthorizedException.class)
     public void testGetCollectionHistoryWhenNotLoggedIn() throws Exception {
-        when(zebedeeCmsServiceMock.getSession(mockRequest))
+        when(zebedeeCmsServiceMock.getSession(requestMock))
                 .thenReturn(null);
         try {
-            api.getCollectionEventHistory(mockRequest, mockResponse);
+            api.getCollectionEventHistory(requestMock, responseMock);
         } catch (ZebedeeException zebEx) {
-            verify(zebedeeCmsServiceMock, times(1)).getSession(mockRequest);
+            verify(zebedeeCmsServiceMock, times(1)).getSession(requestMock);
             verify(zebedeeCmsServiceMock, never()).getPermissions();
             verify(permissionsMock, never()).canEdit(session.email);
             verify(mockDao, never()).getCollectionEventHistory(COLLECTION_ID);
@@ -109,9 +109,9 @@ public class CollectionHistoryTest extends ZebedeeAPIBaseTestCase {
         when(permissionsMock.canEdit(session.email))
                 .thenReturn(false);
         try {
-            api.getCollectionEventHistory(mockRequest, mockResponse);
+            api.getCollectionEventHistory(requestMock, responseMock);
         } catch (ZebedeeException zebEx) {
-            verify(zebedeeCmsServiceMock, times(1)).getSession(mockRequest);
+            verify(zebedeeCmsServiceMock, times(1)).getSession(requestMock);
             verify(zebedeeCmsServiceMock, times(1)).getPermissions();
             verify(permissionsMock, times(1)).canEdit(session.email);
             verify(mockDao, never()).getCollectionEventHistory(COLLECTION_ID);

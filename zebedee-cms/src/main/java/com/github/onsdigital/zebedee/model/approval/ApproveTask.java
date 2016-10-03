@@ -5,8 +5,15 @@ import com.github.onsdigital.zebedee.data.importing.CsvTimeseriesUpdateImporter;
 import com.github.onsdigital.zebedee.data.importing.TimeseriesUpdateCommand;
 import com.github.onsdigital.zebedee.data.importing.TimeseriesUpdateImporter;
 import com.github.onsdigital.zebedee.data.processing.DataIndex;
+import com.github.onsdigital.zebedee.service.TimeSeriesManifestService;
+import com.github.onsdigital.zebedee.service.TimeSeriesManifest;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
-import com.github.onsdigital.zebedee.json.*;
+import com.github.onsdigital.zebedee.json.ApprovalStatus;
+import com.github.onsdigital.zebedee.json.ContentDetail;
+import com.github.onsdigital.zebedee.json.Event;
+import com.github.onsdigital.zebedee.json.EventType;
+import com.github.onsdigital.zebedee.json.PendingDelete;
+import com.github.onsdigital.zebedee.json.Session;
 import com.github.onsdigital.zebedee.model.Collection;
 import com.github.onsdigital.zebedee.model.CollectionWriter;
 import com.github.onsdigital.zebedee.model.approval.tasks.CollectionPdfGenerator;
@@ -29,12 +36,16 @@ import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.*;
+import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logDebug;
+import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logError;
+import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logInfo;
 
 /**
  * Callable implementation for the approval process.
  */
 public class ApproveTask implements Callable<Boolean> {
+
+    private static final TimeSeriesManifestService timeseriesManifestService = TimeSeriesManifestService.get();
 
     private final Collection collection;
     private final Session session;
@@ -43,14 +54,8 @@ public class ApproveTask implements Callable<Boolean> {
     private final ContentReader publishedReader;
     private final DataIndex dataIndex;
 
-    public ApproveTask(
-            Collection collection,
-            Session session,
-            CollectionReader collectionReader,
-            CollectionWriter collectionWriter,
-            ContentReader publishedReader,
-            DataIndex dataIndex
-    ) {
+    public ApproveTask(Collection collection, Session session, CollectionReader collectionReader,
+                       CollectionWriter collectionWriter, ContentReader publishedReader, DataIndex dataIndex) {
         this.collection = collection;
         this.session = session;
         this.collectionReader = collectionReader;
@@ -59,25 +64,22 @@ public class ApproveTask implements Callable<Boolean> {
         this.dataIndex = dataIndex;
     }
 
-    public static void generateTimeseries(
-            Collection collection,
-            ContentReader publishedReader,
-            CollectionReader collectionReader,
-            CollectionWriter collectionWriter,
-            DataIndex dataIndex
-    ) throws IOException, ZebedeeException, URISyntaxException {
+    public static void generateTimeseries(Collection collection, ContentReader publishedReader,
+                                          CollectionReader collectionReader, CollectionWriter collectionWriter,
+                                          DataIndex dataIndex, TimeSeriesManifest manifest)
+            throws IOException, ZebedeeException, URISyntaxException {
 
         // Import any time series update CSV file
         List<TimeseriesUpdateCommand> updateCommands = ImportUpdateCommandCsvs(collection, publishedReader, collectionReader);
 
         // Generate time series if required.
-        new DataPublisher().preprocessCollection(
-                publishedReader,
-                collectionReader,
-                collectionWriter.getReviewed(), true, dataIndex, updateCommands);
+        new DataPublisher().preprocessCollection(publishedReader, collectionReader, collectionWriter.getReviewed(),
+                true, dataIndex, updateCommands, manifest);
     }
 
-    public static List<TimeseriesUpdateCommand> ImportUpdateCommandCsvs(Collection collection, ContentReader publishedReader, CollectionReader collectionReader) throws ZebedeeException, IOException {
+    public static List<TimeseriesUpdateCommand> ImportUpdateCommandCsvs(Collection collection, ContentReader publishedReader,
+                                                                        CollectionReader collectionReader)
+            throws ZebedeeException, IOException {
         List<TimeseriesUpdateCommand> updateCommands = new ArrayList<>();
         if (collection.description.timeseriesImportFiles != null) {
             for (String importFile : collection.description.timeseriesImportFiles) {
@@ -127,21 +129,21 @@ public class ApproveTask implements Callable<Boolean> {
     public Boolean call() {
 
         try {
-
+            TimeSeriesManifest timeSeriesManifest = timeseriesManifestService.getCollectionManifest(collection, dataIndex);
             List<ContentDetail> collectionContent = ContentDetailUtil.resolveDetails(collection.reviewed, collectionReader.getReviewed());
 
             populateReleasePage(collectionContent);
-            generateTimeseries(collection, publishedReader, collectionReader, collectionWriter, dataIndex);
+            generateTimeseries(collection, publishedReader, collectionReader, collectionWriter, dataIndex, timeSeriesManifest);
             generatePdfFiles(collectionContent);
 
             PublishNotification publishNotification = createPublishNotification(collectionReader, collection);
 
-            compressZipFiles(collection, collectionReader, collectionWriter);
+            compressZipFiles(collection, collectionReader, collectionWriter, timeSeriesManifest);
             approveCollection();
 
             // Send a notification to the website with the publish date for caching.
             publishNotification.sendNotification(EventType.APPROVED);
-
+            timeseriesManifestService.saveCollectionManifest(collection, timeSeriesManifest);
             return true;
 
         } catch (IOException | ZebedeeException | URISyntaxException e) {
@@ -160,9 +162,11 @@ public class ApproveTask implements Callable<Boolean> {
         }
     }
 
-    private void compressZipFiles(Collection collection, CollectionReader collectionReader, CollectionWriter collectionWriter) throws ZebedeeException, IOException {
+    private void compressZipFiles(Collection collection, CollectionReader collectionReader,
+                                  CollectionWriter collectionWriter, TimeSeriesManifest manifest)
+            throws ZebedeeException, IOException {
         TimeSeriesCompressionTask timeSeriesCompressionTask = new TimeSeriesCompressionTask();
-        boolean verified = timeSeriesCompressionTask.compressTimeseries(collection, collectionReader, collectionWriter);
+        boolean verified = timeSeriesCompressionTask.compressTimeseries(collection, collectionReader, collectionWriter, manifest);
 
         if (!verified) {
             String message = "Failed verification of time series zip files";

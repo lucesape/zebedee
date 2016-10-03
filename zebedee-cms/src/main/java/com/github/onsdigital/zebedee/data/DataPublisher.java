@@ -5,6 +5,7 @@ import com.github.onsdigital.zebedee.data.importing.TimeseriesUpdateCommand;
 import com.github.onsdigital.zebedee.data.processing.DataIndex;
 import com.github.onsdigital.zebedee.data.processing.DataPublication;
 import com.github.onsdigital.zebedee.data.processing.DataPublicationFinder;
+import com.github.onsdigital.zebedee.service.TimeSeriesManifest;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
@@ -38,24 +39,21 @@ public class DataPublisher {
      * @throws ZebedeeException
      * @throws URISyntaxException
      */
-    public void preprocessCollection(
-            ContentReader publishedContentReader,
-            CollectionReader collectionReader,
-            ContentWriter collectionContentWriter,
-            boolean saveTimeSeries,
-            DataIndex dataIndex,
-            List<TimeseriesUpdateCommand> updateCommands
-    ) throws IOException, ZebedeeException, URISyntaxException {
+    public void preprocessCollection(ContentReader publishedContentReader, CollectionReader collectionReader,
+                                     ContentWriter collectionContentWriter, boolean saveTimeSeries, DataIndex dataIndex,
+                                     List<TimeseriesUpdateCommand> updateCommands, TimeSeriesManifest manifest)
+            throws IOException, ZebedeeException, URISyntaxException {
 
         // Find all files that need data preprocessing
-        List<DataPublication> dataPublications = new DataPublicationFinder().findPublications(publishedContentReader, collectionReader.getReviewed());
+        List<DataPublication> dataPublications = new DataPublicationFinder().findPublications(publishedContentReader,
+                collectionReader.getReviewed(), manifest);
 
-        // For each file in this collection
-        for (DataPublication dataPublication : dataPublications) {
-            // If a file upload exists
-            if (dataPublication.hasUpload())
-                dataPublication.process(publishedContentReader, collectionReader.getReviewed(), collectionContentWriter, saveTimeSeries, dataIndex, updateCommands);
-        }
+            // For each file in this collection
+            for (DataPublication dataPublication : dataPublications) {
+                // If a file upload exists
+                if (dataPublication.hasUpload())
+                    dataPublication.process(publishedContentReader, collectionReader.getReviewed(), collectionContentWriter, saveTimeSeries, dataIndex, updateCommands, manifest);
+            }
 
         applyUpdateCommands(publishedContentReader, collectionReader, collectionContentWriter, dataIndex, updateCommands);
     }

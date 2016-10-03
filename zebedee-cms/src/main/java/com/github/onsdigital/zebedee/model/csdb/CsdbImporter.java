@@ -8,6 +8,7 @@ import com.github.onsdigital.zebedee.content.page.statistics.dataset.Dataset;
 import com.github.onsdigital.zebedee.content.page.statistics.dataset.DownloadSection;
 import com.github.onsdigital.zebedee.content.util.ContentUtil;
 import com.github.onsdigital.zebedee.data.processing.DataIndex;
+import com.github.onsdigital.zebedee.service.TimeSeriesManifest;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
@@ -22,6 +23,7 @@ import com.github.onsdigital.zebedee.reader.CollectionReader;
 import com.github.onsdigital.zebedee.reader.ContentReader;
 import com.github.onsdigital.zebedee.reader.FileSystemContentReader;
 import com.github.onsdigital.zebedee.reader.Resource;
+import com.github.onsdigital.zebedee.service.TimeSeriesManifestService;
 import com.github.onsdigital.zebedee.util.EncryptionUtils;
 import org.apache.commons.io.FilenameUtils;
 
@@ -223,23 +225,26 @@ public class CsdbImporter {
      * @throws ZebedeeException
      */
     public void preProcessCollection(Collection collection) throws IOException, ZebedeeException, URISyntaxException {
+        TimeSeriesManifest manifest = TimeSeriesManifestService.get().getCollectionManifest(collection,Root.zebedee.getDataIndex());
+
         SecretKey collectionKey = Root.zebedee.getKeyringCache().schedulerCache.get(collection.description.id);
         CollectionReader collectionReader = new ZebedeeCollectionReader(collection, collectionKey);
         CollectionWriter collectionWriter = new ZebedeeCollectionWriter(collection, collectionKey);
         ContentReader publishedReader = new FileSystemContentReader(Root.zebedee.getPublished().path);
         DataIndex dataIndex = Root.zebedee.getDataIndex();
 
-        ApproveTask.generateTimeseries(collection, publishedReader, collectionReader, collectionWriter, dataIndex);
+        ApproveTask.generateTimeseries(collection, publishedReader, collectionReader, collectionWriter, dataIndex, null);
         PublishNotification publishNotification = ApproveTask.createPublishNotification(collectionReader, collection);
-        compressZipFiles(collection, collectionReader, collectionWriter);
+        compressZipFiles(collection, collectionReader, collectionWriter, manifest);
 
         // Send a notification to the website with the publish date for caching.
         publishNotification.sendNotification(EventType.APPROVED);
 
     }
 
-    private void compressZipFiles(Collection collection, CollectionReader collectionReader, CollectionWriter collectionWriter) throws ZebedeeException, IOException {
+    private void compressZipFiles(Collection collection, CollectionReader collectionReader,
+                                  CollectionWriter collectionWriter, TimeSeriesManifest manifest) throws ZebedeeException, IOException {
         TimeSeriesCompressionTask timeSeriesCompressionTask = new TimeSeriesCompressionTask();
-        timeSeriesCompressionTask.compressTimeseries(collection, collectionReader, collectionWriter);
+        timeSeriesCompressionTask.compressTimeseries(collection, collectionReader, collectionWriter, manifest);
     }
 }

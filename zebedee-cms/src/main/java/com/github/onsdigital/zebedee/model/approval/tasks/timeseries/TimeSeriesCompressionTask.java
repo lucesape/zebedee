@@ -1,5 +1,6 @@
 package com.github.onsdigital.zebedee.model.approval.tasks.timeseries;
 
+import com.github.onsdigital.zebedee.service.TimeSeriesManifest;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.model.Collection;
 import com.github.onsdigital.zebedee.model.CollectionWriter;
@@ -46,13 +47,16 @@ public class TimeSeriesCompressionTask {
      * @throws ZebedeeException
      * @throws IOException
      */
-    public boolean compressTimeseries(Collection collection, CollectionReader collectionReader, CollectionWriter collectionWriter) throws ZebedeeException, IOException {
+    public boolean compressTimeseries(Collection collection, CollectionReader collectionReader,
+                                      CollectionWriter collectionWriter, TimeSeriesManifest manifest)
+            throws ZebedeeException, IOException {
         logInfo("Compressing time series directories").collectionName(collection).log();
         int attempt = 1;
         List<TimeseriesCompressionResult> failedZipFiles = null; // populated on a failed attempt
 
         while (attempt <= maxAttempts) {
-            List<TimeseriesCompressionResult> zipFiles = createZipFiles(collection, collectionReader, collectionWriter, attempt, failedZipFiles);
+            List<TimeseriesCompressionResult> zipFiles = createZipFiles(collection, collectionReader, collectionWriter,
+                    attempt, failedZipFiles, manifest);
 
             failedZipFiles = verifyZipFiles(collection, collectionReader, collectionWriter, attempt, zipFiles);
             if (failedZipFiles.size() == 0) {
@@ -66,17 +70,25 @@ public class TimeSeriesCompressionTask {
         return false; // if we got this far we have hit the limit of attempts, so its failed.
     }
 
-    private List<TimeseriesCompressionResult> createZipFiles(Collection collection, CollectionReader collectionReader, CollectionWriter collectionWriter, int attempt, List<TimeseriesCompressionResult> failedZipFiles) throws ZebedeeException, IOException {
+    private List<TimeseriesCompressionResult> createZipFiles(Collection collection, CollectionReader collectionReader,
+                                                             CollectionWriter collectionWriter, int attempt,
+                                                             List<TimeseriesCompressionResult> failedZipFiles,
+                                                             TimeSeriesManifest manifest)
+            throws ZebedeeException, IOException {
         List<TimeseriesCompressionResult> zipFiles;
         if (attempt == 1) { // on the first attempt we check all the files.
-            zipFiles = timeSeriesCompressor.compressFiles(collectionReader.getReviewed(), collectionWriter.getReviewed(), collection.getDescription().isEncrypted);
+            zipFiles = timeSeriesCompressor.compressFiles(collectionReader.getReviewed(), collectionWriter.getReviewed(),
+                    collection.getDescription().isEncrypted, manifest);
         } else { // on additional attempts we check only the failed files.
-            zipFiles = timeSeriesCompressor.compressFiles(collectionReader.getReviewed(), collectionWriter.getReviewed(), collection.getDescription().isEncrypted, failedZipFiles);
+            zipFiles = timeSeriesCompressor.compressFiles(collectionReader.getReviewed(),
+                    collectionWriter.getReviewed(), collection.getDescription().isEncrypted, manifest, failedZipFiles);
         }
         return zipFiles;
     }
 
-    private List<TimeseriesCompressionResult> verifyZipFiles(Collection collection, CollectionReader collectionReader, CollectionWriter collectionWriter, int attempt, List<TimeseriesCompressionResult> zipFiles) throws IOException {
+    private List<TimeseriesCompressionResult> verifyZipFiles(Collection collection, CollectionReader collectionReader,
+                                                             CollectionWriter collectionWriter, int attempt,
+                                                             List<TimeseriesCompressionResult> zipFiles) throws IOException {
         List<TimeseriesCompressionResult> failedZipFiles;
         logInfo("Verifying " + zipFiles.size() + " time series zip files").collectionName(collection).addParameter("attempt", attempt).log();
         failedZipFiles = zipFileVerifier.verifyZipFiles(

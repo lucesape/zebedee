@@ -6,8 +6,18 @@ import com.github.onsdigital.zebedee.api.Root;
 import com.github.onsdigital.zebedee.content.util.ContentUtil;
 import com.github.onsdigital.zebedee.data.json.DirectoryListing;
 import com.github.onsdigital.zebedee.data.processing.DataIndex;
-import com.github.onsdigital.zebedee.exceptions.*;
-import com.github.onsdigital.zebedee.json.*;
+import com.github.onsdigital.zebedee.exceptions.BadRequestException;
+import com.github.onsdigital.zebedee.exceptions.CollectionNotFoundException;
+import com.github.onsdigital.zebedee.exceptions.ConflictException;
+import com.github.onsdigital.zebedee.exceptions.DeleteContentRequestDeniedException;
+import com.github.onsdigital.zebedee.exceptions.NotFoundException;
+import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
+import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
+import com.github.onsdigital.zebedee.json.ApprovalStatus;
+import com.github.onsdigital.zebedee.json.Event;
+import com.github.onsdigital.zebedee.json.EventType;
+import com.github.onsdigital.zebedee.json.Keyring;
+import com.github.onsdigital.zebedee.json.Session;
 import com.github.onsdigital.zebedee.model.approval.ApprovalQueue;
 import com.github.onsdigital.zebedee.model.approval.ApproveTask;
 import com.github.onsdigital.zebedee.model.publishing.PublishNotification;
@@ -41,7 +51,15 @@ import java.util.concurrent.Future;
 import static com.github.onsdigital.zebedee.configuration.Configuration.getUnauthorizedMessage;
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logError;
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logInfo;
-import static com.github.onsdigital.zebedee.persistence.CollectionEventType.*;
+import static com.github.onsdigital.zebedee.persistence.CollectionEventType.COLLECTION_APPROVED;
+import static com.github.onsdigital.zebedee.persistence.CollectionEventType.COLLECTION_COMPLETED_ERROR;
+import static com.github.onsdigital.zebedee.persistence.CollectionEventType.COLLECTION_CONTENT_DELETED;
+import static com.github.onsdigital.zebedee.persistence.CollectionEventType.COLLECTION_CONTENT_MOVED;
+import static com.github.onsdigital.zebedee.persistence.CollectionEventType.COLLECTION_CONTENT_RENAMED;
+import static com.github.onsdigital.zebedee.persistence.CollectionEventType.COLLECTION_DELETED;
+import static com.github.onsdigital.zebedee.persistence.CollectionEventType.COLLECTION_ITEM_COMPLETED;
+import static com.github.onsdigital.zebedee.persistence.CollectionEventType.COLLECTION_UNLOCKED;
+import static com.github.onsdigital.zebedee.persistence.CollectionEventType.DATA_VISUALISATION_COLLECTION_CONTENT_DELETED;
 import static com.github.onsdigital.zebedee.persistence.dao.CollectionHistoryDaoFactory.getCollectionHistoryDao;
 import static com.github.onsdigital.zebedee.persistence.model.CollectionEventMetaData.contentMoved;
 import static com.github.onsdigital.zebedee.persistence.model.CollectionEventMetaData.contentRenamed;
@@ -94,6 +112,24 @@ public class Collections {
     }
 
     public static void removeEmptyCollectionDirectories(Path path) throws IOException {
+        if (path == null) {
+            return;
+        }
+
+        boolean isFound = false;
+        while (!isFound && path != null) {
+
+            if (!Files.exists(path)) {
+                path = path.getParent();
+            } else {
+                isFound = true;
+            }
+        }
+
+        if (!isFound) {
+            return;
+        }
+
         if (!Files.isDirectory(path)) {
             path = path.getParent();
         }

@@ -11,6 +11,7 @@ import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.exceptions.UnexpectedErrorException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.model.Collection;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 
@@ -35,6 +36,7 @@ public class ZebedeeLogBuilder extends LogMessageBuilder {
     private static final String PATH = "path";
     private static final String ROW = "row";
     private static final String CELL = "cell";
+    private static final String DATASET_ID = "dataSetId";
 
     private ZebedeeLogBuilder(String description) {
         super(description);
@@ -98,8 +100,35 @@ public class ZebedeeLogBuilder extends LogMessageBuilder {
         }
 
         // Default to internal server error.
-        throw new UnexpectedErrorException(getStringProperty(ERROR_CONTEXT),
-                Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+        throw new UnexpectedErrorException(getStringProperty(ERROR_CONTEXT), Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    }
+
+
+    public <T extends ZebedeeException> ZebedeeException logAndThrowX(Class<T> exceptionClass) throws ZebedeeException {
+        this.log();
+
+        if (BadRequestException.class.equals(exceptionClass)) {
+            return new BadRequestException(getStringProperty(ERROR_CONTEXT));
+        } else if (CollectionNotFoundException.class.equals(exceptionClass)) {
+            return new CollectionNotFoundException(getStringProperty(ERROR_CONTEXT));
+        } else if (ConflictException.class.equals(exceptionClass)) {
+            return new ConflictException(getStringProperty(ERROR_CONTEXT));
+        } else if (NotFoundException.class.equals(exceptionClass)) {
+            return new NotFoundException(getStringProperty(ERROR_CONTEXT));
+        } else if (UnauthorizedException.class.equals(exceptionClass)) {
+            return new UnauthorizedException(getStringProperty(ERROR_CONTEXT));
+        } else if (CollectionEventHistoryException.class.equals(exceptionClass)) {
+            return new CollectionEventHistoryException(getStringProperty(ERROR_CONTEXT));
+        }
+
+        // Default to internal server error.
+        return new UnexpectedErrorException(getStringProperty(ERROR_CONTEXT), Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+    }
+
+
+    public <T extends Exception> void logAndThrow(T ex) throws ZebedeeException {
+        this.log();
+        throw new UnexpectedErrorException(ex.getMessage(), Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
     }
 
     public void throwUnchecked(Throwable error) {
@@ -176,6 +205,13 @@ public class ZebedeeLogBuilder extends LogMessageBuilder {
     public ZebedeeLogBuilder cell(Cell cell) {
         if (cell != null) {
             addParameter(CELL, cell.getColumnIndex());
+        }
+        return this;
+    }
+
+    public ZebedeeLogBuilder dataSetId(String dataSetId) {
+        if (StringUtils.isNotEmpty(dataSetId)) {
+            addParameter(DATASET_ID, dataSetId);
         }
         return this;
     }

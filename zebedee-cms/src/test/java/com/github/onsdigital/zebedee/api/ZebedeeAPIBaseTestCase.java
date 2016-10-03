@@ -1,6 +1,7 @@
 package com.github.onsdigital.zebedee.api;
 
 import com.github.onsdigital.zebedee.json.Session;
+import com.github.onsdigital.zebedee.util.ZebedeeCmsService;
 import org.junit.Before;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -21,10 +22,16 @@ public abstract class ZebedeeAPIBaseTestCase {
     protected static String REQUESTED_URI = "/{0}/" + COLLECTION_ID;
 
     @Mock
-    protected HttpServletRequest mockRequest;
+    protected HttpServletRequest requestMock;
 
     @Mock
-    protected HttpServletResponse mockResponse;
+    protected HttpServletResponse responseMock;
+
+    @Mock
+    protected ZebedeeCmsService zebedeeCmsServiceMock;
+
+    @Mock
+    protected com.github.onsdigital.zebedee.model.Collection collectionMock;
 
     protected Session session;
 
@@ -38,7 +45,7 @@ public abstract class ZebedeeAPIBaseTestCase {
         customSetUp();
         REQUESTED_URI = MessageFormat.format(REQUESTED_URI, getAPIName());
 
-        when(mockRequest.getRequestURI())
+        when(requestMock.getRequestURI())
                 .thenReturn(REQUESTED_URI);
 
     }

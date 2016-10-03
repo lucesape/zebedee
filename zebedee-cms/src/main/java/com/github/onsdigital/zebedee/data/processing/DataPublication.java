@@ -9,12 +9,15 @@ import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.model.ContentWriter;
 import com.github.onsdigital.zebedee.reader.CompositeContentReader;
 import com.github.onsdigital.zebedee.reader.ContentReader;
+import com.github.onsdigital.zebedee.service.TimeSeriesManifest;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
+
+import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logError;
 
 public class DataPublication {
     public static final String DEFAULT_DATASET_ID = "data";
@@ -26,9 +29,10 @@ public class DataPublication {
 
     /**
      * Setup a a new Data publication
-     *  @param publishedContentReader a reader for already published content
-     * @param reviewedContentReader a reader for the content being approved
-     * @param datasetPageUri the root Timeseries dataset page
+     *
+     * @param publishedContentReader a reader for already published content
+     * @param reviewedContentReader  a reader for the content being approved
+     * @param datasetPageUri         the root Timeseries dataset page
      */
     public DataPublication(ContentReader publishedContentReader, ContentReader reviewedContentReader, String datasetPageUri) throws ZebedeeException, IOException {
         // Setup the publication by backtracking from the dataset
@@ -37,7 +41,7 @@ public class DataPublication {
 
     /**
      * Get the dataset id from a file
-     *
+     * <p>
      * Filename should be of the form [datasetId].csdb or upload.[datasetId].csv
      *
      * @param uri the uri of the data upload
@@ -72,64 +76,67 @@ public class DataPublication {
 
     /**
      * Process a specified collection
+     *
      * @param publishedContentReader
      * @param reviewedContentReader
      * @param reviewedContentWriter
      * @param saveTimeSeries
      * @param dataIndex
-     * @param updateCommands - a set of commands to update the timeseries metadata.
+     * @param updateCommands         - a set of commands to update the timeseries metadata.
      * @throws IOException
      * @throws ZebedeeException
      * @throws URISyntaxException
      */
-    public void process(
-            ContentReader publishedContentReader,
-            ContentReader reviewedContentReader,
-            ContentWriter reviewedContentWriter,
-            boolean saveTimeSeries,
-            DataIndex dataIndex,
-            List<TimeseriesUpdateCommand> updateCommands
-    ) throws IOException, ZebedeeException, URISyntaxException {
-        // Wait for dataIndex to complete progress
-        dataIndex.pauseUntilComplete(MAX_SECONDS);
+    public void process(ContentReader publishedContentReader, ContentReader reviewedContentReader,
+                        ContentWriter reviewedContentWriter, boolean saveTimeSeries, DataIndex dataIndex,
+                        List<TimeseriesUpdateCommand> updateCommands, TimeSeriesManifest manifest)
+            throws IOException, ZebedeeException, URISyntaxException {
+        try {
+            // Wait for dataIndex to complete progress
+            dataIndex.pauseUntilComplete(MAX_SECONDS);
 
-        // check this landingpage has a datasetId and generate if necessary
-        checkLandingPageDatasetId(reviewedContentWriter);
+            // check this landingpage has a datasetId and generate if necessary
+            checkLandingPageDatasetId(reviewedContentWriter);
 
-        // send the file to brian to create timeseries.
-        this.serieses = callDataLink(reviewedContentReader, details.fileUri);
+            // send the file to brian to create timeseries.
+            this.serieses = callDataLink(reviewedContentReader, details.fileUri);
 
-        CompositeContentReader compositeContentReader = new CompositeContentReader(reviewedContentReader, publishedContentReader);
+            CompositeContentReader compositeContentReader = new CompositeContentReader(reviewedContentReader, publishedContentReader);
+            // Process each timeseries returned from Brian
+            for (TimeSeries series : serieses) {
 
-        // Process each timeseries returned from Brian
-        for(TimeSeries series: serieses) {
+                // see if there is an update command for this timeseries.
+                Optional<TimeseriesUpdateCommand> command = updateCommands.stream()
+                        .filter(updateCommand -> updateCommand.cdid.equalsIgnoreCase(series.getCdid()))
+                        .findFirst();
 
-            // see if there is an update command for this timeseries.
-            Optional<TimeseriesUpdateCommand> command = updateCommands.stream()
-                    .filter(updateCommand -> updateCommand.cdid.equalsIgnoreCase(series.getCdid()))
-                    .findFirst();
+                // Build new timeseries
+                DataProcessor processor = new DataProcessor();
+                processor.processTimeseries(compositeContentReader, details, series, dataIndex, command);
 
-            // Build new timeseries
-            DataProcessor processor = new DataProcessor();
-            processor.processTimeseries(compositeContentReader, details, series, dataIndex, command);
+                // Save files
+                if (saveTimeSeries) {
+                    DataWriter writer = new DataWriter(reviewedContentWriter, reviewedContentReader, publishedContentReader);
+                    writer.versionAndSave(processor, details);
+                }
 
-            // Save files
-            if (saveTimeSeries) {
-                DataWriter writer = new DataWriter(reviewedContentWriter, reviewedContentReader, publishedContentReader);
-                writer.versionAndSave(processor, details);
+                // Retain the result to be added to any generated spreadsheet
+                results.add(processor.timeSeries);
+                if (manifest != null) {
+                    manifest.addManifestEntry(series);
+                }
             }
 
-            // Retain the result to be added to any generated spreadsheet
-            results.add(processor.timeSeries);
+            // Generate data files
+            DataFileGenerator generator = new DataFileGenerator(reviewedContentWriter);
+            List<DownloadSection> downloadSections = generator.generateDataDownloads(this.details, this.results);
+            downloadSections.add(newDownloadSection("csdb", details.fileUri));
+
+            // Write the dataset page
+            writeDatasetPage(reviewedContentWriter, details, downloadSections);
+        } catch (Exception e) {
+            logError(e, "Unexpected error while attempting to process timeSeries").logAndThrow(e);
         }
-
-        // Generate data files
-        DataFileGenerator generator = new DataFileGenerator(reviewedContentWriter);
-        List<DownloadSection> downloadSections = generator.generateDataDownloads(this.details, this.results);
-        downloadSections.add(newDownloadSection("csdb", details.fileUri));
-
-        // Write the dataset page
-        writeDatasetPage(reviewedContentWriter, details, downloadSections);
     }
 
 
@@ -143,7 +150,8 @@ public class DataPublication {
      * @throws ZebedeeException
      */
     public void process(ContentReader publishedContentReader, ContentReader reviewedContentReader, ContentWriter reviewedContentWriter, DataIndex dataIndex, List<TimeseriesUpdateCommand> updateCommands) throws IOException, ZebedeeException, URISyntaxException {
-        process(publishedContentReader, reviewedContentReader, reviewedContentWriter, true, dataIndex, updateCommands);
+        // TODO
+        process(publishedContentReader, reviewedContentReader, reviewedContentWriter, true, dataIndex, updateCommands, null);
     }
 
         /**

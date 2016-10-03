@@ -57,7 +57,7 @@ public class ClickEventLogTest extends ZebedeeAPIBaseTestCase {
         InputStream inputStream = new ByteArrayInputStream(clickEventJson.getBytes(StandardCharsets.UTF_8));
 
         // Return this input stream from the request.
-        when(mockRequest.getInputStream())
+        when(requestMock.getInputStream())
                 .thenReturn(new DelegatingServletInputStream(inputStream));
 
         ReflectionTestUtils.setField(endpoint, "clickEventLogFactory", clickEventLogFactoryMock);
@@ -70,9 +70,9 @@ public class ClickEventLogTest extends ZebedeeAPIBaseTestCase {
 
     @Test
     public void shouldLogClickEvent() throws Exception {
-        endpoint.logEvent(mockRequest, mockResponse);
+        endpoint.logEvent(requestMock, responseMock);
 
-        verify(mockRequest, times(1)).getInputStream();
+        verify(requestMock, times(1)).getInputStream();
         verify(clickEventLogFactoryMock, times(1)).log(clickEvent);
     }
 }

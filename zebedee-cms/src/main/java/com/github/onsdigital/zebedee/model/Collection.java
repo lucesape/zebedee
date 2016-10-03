@@ -838,6 +838,28 @@ public class Collection {
         return hasDeleted;
     }
 
+    public boolean deleteDirectoryAndContent(String uri) throws IOException {
+        boolean isDeleted = false;
+        Content content = null;
+
+        if (inProgress.exists(uri)) {
+            content = inProgress;
+        } else if (complete.exists(uri)) {
+            content = complete;
+        } else if (reviewed.exists(uri)) {
+            content = reviewed;
+        }
+
+        if (content != null) {
+            Path path = content.toPath(uri);
+
+            PathUtils.deleteFilesInDirectory(path);
+            Collections.removeEmptyCollectionDirectories(path);
+            isDeleted = true;
+        }
+        return isDeleted;
+    }
+
     public boolean deleteDataVisContent(Session session, Path contentPath) throws IOException {
         if (contentPath == null || StringUtils.isEmpty(contentPath.toString())) {
             return false;
@@ -873,6 +895,10 @@ public class Collection {
      * @throws NotFoundException
      */
     private void deleteContent(Content content, String uri) throws IOException {
+        if (uri.endsWith("pb.csv")) {
+            System.out.println("CSV file exists? " + Files.exists(Paths.get(uri)));
+        }
+
         Path path = content.toPath(uri);
         PathUtils.deleteFilesInDirectory(path);
 

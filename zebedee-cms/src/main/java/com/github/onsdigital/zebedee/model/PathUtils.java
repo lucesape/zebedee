@@ -152,7 +152,7 @@ public class PathUtils {
 
         try (DirectoryStream<Path> stream = Files.newDirectoryStream(sourceDirectory)) {
             for (Path entry : stream) {
-                if (!Files.isDirectory(entry)) {
+                if (!Files.isDirectory(entry) && Files.exists(entry)) {
                     Files.delete(entry);
                 }
             }

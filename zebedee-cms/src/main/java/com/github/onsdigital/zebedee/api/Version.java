@@ -68,7 +68,8 @@ public class Version {
      *                 Returns HTTP 401 if the user is not authorised to edit content.
      */
     @DELETE
-    public boolean delete(HttpServletRequest request, HttpServletResponse response) throws IOException, BadRequestException, NotFoundException, UnauthorizedException {
+    public boolean delete(HttpServletRequest request, HttpServletResponse response) throws IOException,
+            BadRequestException, NotFoundException, UnauthorizedException {
 
         Session session = Root.zebedee.getSessions().get(request);
         if (session == null || !Root.zebedee.getPermissions().canEdit(session.email)) {
