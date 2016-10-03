@@ -16,6 +16,7 @@ import com.github.onsdigital.zebedee.model.ZebedeeCollectionWriter;
 import com.github.onsdigital.zebedee.reader.CollectionReader;
 import com.github.onsdigital.zebedee.reader.ContentReader;
 import com.github.onsdigital.zebedee.reader.FileSystemContentReader;
+import com.github.onsdigital.zebedee.service.TimeSeriesManifest;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,6 +28,7 @@ import java.util.Date;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 /**
  * Created by thomasridd on 1/19/16.
@@ -44,6 +46,8 @@ public class DataPublicationFinderTest {
     CollectionWriter collectionWriter;
     DataBuilder dataBuilder;
     DataPagesGenerator generator;
+
+    TimeSeriesManifest manifest = mock(TimeSeriesManifest.class);
 
     @Before
     public void setUp() throws Exception {
@@ -81,7 +85,8 @@ public class DataPublicationFinderTest {
 
         // When
         // we search for publications
-        List<DataPublication> publications = new DataPublicationFinder().findPublications(publishedReader, collectionReader.getReviewed());
+        List<DataPublication> publications = new DataPublicationFinder()
+                .findPublications(publishedReader, collectionReader.getReviewed(), manifest);
 
         // Then
         // no data turns up
@@ -97,7 +102,8 @@ public class DataPublicationFinderTest {
 
         // When
         // we search for publications
-        List<DataPublication> publications = new DataPublicationFinder().findPublications(publishedReader, collectionReader.getReviewed());
+        List<DataPublication> publications = new DataPublicationFinder()
+                .findPublications(publishedReader, collectionReader.getReviewed(), manifest);
 
         // Then
         // the publication is identified
@@ -118,7 +124,8 @@ public class DataPublicationFinderTest {
 
         // When
         // we search for publications
-        List<DataPublication> publications = new DataPublicationFinder().findPublications(publishedReader, collectionReader.getReviewed());
+        List<DataPublication> publications = new DataPublicationFinder()
+                .findPublications(publishedReader, collectionReader.getReviewed(), manifest);
 
         // Then
         // the publication is identified

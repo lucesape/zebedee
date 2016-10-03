@@ -11,8 +11,10 @@ import com.github.onsdigital.zebedee.model.approval.tasks.timeseries.TimeseriesC
 import com.github.onsdigital.zebedee.model.approval.tasks.timeseries.ZipFileVerifier;
 import com.github.onsdigital.zebedee.reader.CollectionReader;
 import com.github.onsdigital.zebedee.reader.ContentReader;
+import com.github.onsdigital.zebedee.service.TimeSeriesManifest;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -22,6 +24,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -36,6 +39,9 @@ public class TimeseriesCompressionTaskTest {
 
     private Path timeSeriesDirectoryPath = Paths.get("some/path/timeseries");
     private Path timeSeriesZipPath = Paths.get("some/path/timeseries-to-publish.zip");
+
+    @Mock
+    private TimeSeriesManifest manifest;
 
     @Before
     public void setUp() throws Exception {
@@ -66,7 +72,7 @@ public class TimeseriesCompressionTaskTest {
 
         // When the compress time series task is run.
         TimeSeriesCompressionTask task = new TimeSeriesCompressionTask(timeSeriesCompressor, zipFileVerifier);
-        boolean result = task.compressTimeseries(collection, collectionReader, collectionWriter);
+        boolean result = task.compressTimeseries(collection, collectionReader, collectionWriter, manifest);
 
         // Then the method returns true with no exceptions thrown
         assertTrue(result);
@@ -86,7 +92,7 @@ public class TimeseriesCompressionTaskTest {
 
         // When the compress time series task is run.
         TimeSeriesCompressionTask task = new TimeSeriesCompressionTask(timeSeriesCompressor, zipFileVerifier);
-        boolean result = task.compressTimeseries(collection, collectionReader, collectionWriter);
+        boolean result = task.compressTimeseries(collection, collectionReader, collectionWriter, manifest);
 
         // Then the method returns true
         assertTrue(result);
@@ -100,12 +106,12 @@ public class TimeseriesCompressionTaskTest {
         TimeSeriesCompressor timeSeriesCompressor = getMockedCompressor(zipFiles);
 
         ZipFileVerifier zipFileVerifier = mock(ZipFileVerifier.class);
-        when(zipFileVerifier.verifyZipFiles(zipFiles, contentReader, contentReader, contentWriter))
+        when(zipFileVerifier.verifyZipFiles(any(), any(ContentReader.class), any(ContentReader.class), any(ContentWriter.class)))
                 .thenReturn(zipFiles);
 
         // When the compress time series task is run.
         TimeSeriesCompressionTask task = new TimeSeriesCompressionTask(timeSeriesCompressor, zipFileVerifier);
-        boolean result = task.compressTimeseries(collection, collectionReader, collectionWriter);
+        boolean result = task.compressTimeseries(collection, collectionReader, collectionWriter, manifest);
 
         // Then the method returns false
         assertFalse(result);
@@ -126,7 +132,7 @@ public class TimeseriesCompressionTaskTest {
 
         // When the compress time series task is run.
         TimeSeriesCompressionTask task = new TimeSeriesCompressionTask(timeSeriesCompressor, zipFileVerifier);
-        boolean result = task.compressTimeseries(collection, collectionReader, collectionWriter);
+        boolean result = task.compressTimeseries(collection, collectionReader, collectionWriter, manifest);
 
         // Then the method returns true
         assertTrue(result);
@@ -134,9 +140,9 @@ public class TimeseriesCompressionTaskTest {
 
     public TimeSeriesCompressor getMockedCompressor(List<TimeseriesCompressionResult> zipFiles) throws ZebedeeException, IOException {
         TimeSeriesCompressor timeSeriesCompressor = mock(TimeSeriesCompressor.class);
-        when(timeSeriesCompressor.compressFiles(contentReader, contentWriter, isEncrypted))
+        when(timeSeriesCompressor.compressFiles(contentReader, contentWriter, isEncrypted, manifest))
                 .thenReturn(zipFiles); // first attempt
-        when(timeSeriesCompressor.compressFiles(contentReader, contentWriter, isEncrypted, zipFiles))
+        when(timeSeriesCompressor.compressFiles(contentReader, contentWriter, isEncrypted, manifest))
                 .thenReturn(zipFiles); // attempt 2+
         return timeSeriesCompressor;
     }

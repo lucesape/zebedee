@@ -25,7 +25,8 @@ public class DataPublicationFinder {
      * @throws IOException
      * @throws ZebedeeException
      */
-    public List<DataPublication> findPublications(ContentReader publishedContentReader, ContentReader reviewedContentReader, TimeSeriesManifest manifest) throws IOException, ZebedeeException {
+    public List<DataPublication> findPublications(ContentReader publishedContentReader, ContentReader reviewedContentReader,
+                                                  TimeSeriesManifest manifest) throws IOException, ZebedeeException {
 
         List<DataPublication> results = new ArrayList<>();
 

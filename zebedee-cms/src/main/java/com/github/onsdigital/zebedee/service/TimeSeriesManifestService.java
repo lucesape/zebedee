@@ -5,10 +5,11 @@ import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.Session;
 import com.github.onsdigital.zebedee.model.Collection;
-import com.github.onsdigital.zebedee.model.Collections;
 import com.google.gson.Gson;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -39,7 +40,7 @@ public class TimeSeriesManifestService {
     private static final String FILENAME = "timeseries-manifest.json";
     private static final String DATA_JSON = "data.json";
 
-    private static ExecutorService executorService = Executors.newSingleThreadExecutor();
+    private static ExecutorService executorService = Executors.newFixedThreadPool(20);
     private static final TimeSeriesManifestService instance = new TimeSeriesManifestService();
 
     public static TimeSeriesManifestService get() {
@@ -103,10 +104,13 @@ public class TimeSeriesManifestService {
     private Callable<Boolean> cleanUpTask(Collection collection, Path uri) {
         return () -> {
             if (collection.isInCollection(uri.toString())) {
-                Path deletePath = collection.find(uri.toString()).resolve(DATA_JSON);
-                Files.deleteIfExists(deletePath);
-                Collections.removeEmptyCollectionDirectories(deletePath);
-                //collection.deleteDirectoryAndContent(uri.toString());
+                Path deletePath = collection.find(uri.toString());
+                File parent = deletePath.getParent().toFile();
+                FileUtils.deleteQuietly(deletePath.toFile());
+
+                if (parent != null && parent.isDirectory() && parent.list().length == 0) {
+                    FileUtils.deleteQuietly(parent);
+                }
             }
             return true;
         };

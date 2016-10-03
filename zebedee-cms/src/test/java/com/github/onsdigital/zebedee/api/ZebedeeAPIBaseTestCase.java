@@ -1,5 +1,6 @@
 package com.github.onsdigital.zebedee.api;
 
+import com.github.onsdigital.zebedee.Zebedee;
 import com.github.onsdigital.zebedee.json.Session;
 import com.github.onsdigital.zebedee.util.ZebedeeCmsService;
 import org.junit.Before;
@@ -29,6 +30,9 @@ public abstract class ZebedeeAPIBaseTestCase {
 
     @Mock
     protected ZebedeeCmsService zebedeeCmsServiceMock;
+
+    @Mock
+    protected Zebedee zebedeeMock;
 
     @Mock
     protected com.github.onsdigital.zebedee.model.Collection collectionMock;

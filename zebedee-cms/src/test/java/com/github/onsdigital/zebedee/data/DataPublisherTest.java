@@ -57,7 +57,8 @@ public class DataPublisherTest {
 
         // when the update command is passed into the pre process collection method.
         DataPublisher dataPublisher = new DataPublisher();
-        dataPublisher.preprocessCollection(publishedContentReader, collectionReader, collectionWriter.getReviewed(), false, dataIndex, updateCommands);
+        dataPublisher.preprocessCollection(publishedContentReader, collectionReader, collectionWriter.getReviewed(),
+                false, dataIndex, updateCommands, null);
 
         // then the command should be applied and the file should be in the collection with the updated title.
         String actualTitle = collectionReader.getReviewed().getContent(uri).getDescription().getTitle();

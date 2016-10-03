@@ -10,13 +10,21 @@ import com.github.onsdigital.zebedee.model.approval.tasks.timeseries.TimeseriesC
 import com.github.onsdigital.zebedee.model.approval.tasks.timeseries.ZipFileVerifier;
 import com.github.onsdigital.zebedee.reader.ContentReader;
 import com.github.onsdigital.zebedee.reader.FileSystemContentReader;
+import com.github.onsdigital.zebedee.service.TimeSeriesManifest;
 import org.apache.commons.io.FileUtils;
+import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import static junit.framework.TestCase.assertTrue;
 
@@ -24,6 +32,14 @@ public class ZipFileVerifierTest {
 
     private TimeSeriesCompressor timeSeriesCompressor = new TimeSeriesCompressor();
     private ZipFileVerifier zipFileVerifier = new ZipFileVerifier();
+
+    @Mock
+    private TimeSeriesManifest manifestMock;
+
+    @Before
+    public void setUp() throws Exception {
+        MockitoAnnotations.initMocks(this);
+    }
 
     public static void createTimeseriesFile(Path timeseriesRoot) throws IOException {
         String timeseriesId = Random.id();
@@ -54,11 +70,12 @@ public class ZipFileVerifierTest {
         ContentWriter writer = new ContentWriter(tempDirectory);
 
         createTimeseriesFile(timeseriesRoot);
-        List<TimeseriesCompressionResult> zipFiles = timeSeriesCompressor.compressFiles(reader, writer, false);
+        List<TimeseriesCompressionResult> zipFiles = timeSeriesCompressor.compressFiles(reader, writer, false, manifestMock);
 
         // when the zip file is verified.
         List<TimeseriesCompressionResult> failedVerifications = zipFileVerifier.verifyZipFiles(zipFiles, reader, reader, writer);
         assertTrue(failedVerifications.size() == 0);
+        verify(manifestMock, times(1)).addTimeSeriesZip(any(Path.class));
     }
 
     // If there is an empty json file in the zip file then fail verification.
@@ -72,10 +89,11 @@ public class ZipFileVerifierTest {
         ContentWriter writer = new ContentWriter(tempDirectory);
 
         createEmptyFile(timeseriesRoot);
-        List<TimeseriesCompressionResult> zipFiles = timeSeriesCompressor.compressFiles(reader, writer, false);
+        List<TimeseriesCompressionResult> zipFiles = timeSeriesCompressor.compressFiles(reader, writer, false, manifestMock);
 
         List<TimeseriesCompressionResult> failedVerifications = zipFileVerifier.verifyZipFiles(zipFiles, reader, reader, writer);
         assertTrue(failedVerifications.size() > 0);
+        verify(manifestMock, times(1)).addTimeSeriesZip(any(Path.class));
     }
 
     // if there is an empty timeseries directory then the zip will be empty. Recognise there are no timeseries and do not fail verification.
@@ -89,28 +107,28 @@ public class ZipFileVerifierTest {
         ContentReader reader = new FileSystemContentReader(tempDirectory);
         ContentWriter writer = new ContentWriter(tempDirectory);
 
-        List<TimeseriesCompressionResult> zipFiles = timeSeriesCompressor.compressFiles(reader, writer, false);
+        List<TimeseriesCompressionResult> zipFiles = timeSeriesCompressor.compressFiles(reader, writer, false, manifestMock);
 
         List<TimeseriesCompressionResult> failedVerifications = zipFileVerifier.verifyZipFiles(zipFiles, reader, reader, writer);
         assertTrue(failedVerifications.size() > 0);
+        verify(manifestMock, times(1)).addTimeSeriesZip(any(Path.class));
     }
 
     // If a zip file has no files but there should be timeseries in there then fail verification
     @Test
     public void shouldReturnFailedVerificationsForEmptyZip() throws IOException, ZebedeeException {
-
-
         Path tempDirectory = Files.createTempDirectory(Random.id());
         Files.createDirectories(tempDirectory.resolve("timeseries"));
 
         ContentReader reader = new FileSystemContentReader(tempDirectory);
         ContentWriter writer = new ContentWriter(tempDirectory);
 
-        List<TimeseriesCompressionResult> zipFiles = timeSeriesCompressor.compressFiles(reader, writer, false);
+        List<TimeseriesCompressionResult> zipFiles = timeSeriesCompressor.compressFiles(reader, writer, false, manifestMock);
         zipFiles.get(0).numberOfFiles = 1;
 
         // when the zip file is verified.
         List<TimeseriesCompressionResult> failedVerifications = zipFileVerifier.verifyZipFiles(zipFiles, reader, reader, writer);
         assertTrue(failedVerifications.size() > 0);
+        verify(manifestMock, times(1)).addTimeSeriesZip(any(Path.class));
     }
 }
