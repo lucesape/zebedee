@@ -139,7 +139,7 @@ public class DataProcessor {
         System.out.println("newTimeSeries.cdid = " + newTimeSeries.getCdid());
 
         if (manifest != null) {
-            manifest.addManifestEntry(newTimeSeries.getDescription().getDatasetId(), newTimeSeries.getCdid());
+            manifest.addManifestEntry(this.timeSeries.getDescription().getDatasetId(), this.timeSeries.getCdid());
         }
 
         return this.timeSeries;
