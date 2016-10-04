@@ -133,13 +133,10 @@ public class DataProcessor {
         corrections = dataMerge.corrections;
         insertions = dataMerge.insertions;
 
-        System.out.println("this.timeseries.desc.datasetid = " + this.timeSeries.getDescription().getDatasetId());
-        System.out.println("this.timeseries.cdid = " + this.timeSeries.getCdid());
-        System.out.println("newTimeSeries.desc.datasetid = " + newTimeSeries.getDescription().getDatasetId());
-        System.out.println("newTimeSeries.cdid = " + newTimeSeries.getCdid());
+        System.out.println("details.landingPage.getDescription().getDatasetId() = " + details.landingPage.getDescription().getDatasetId());
 
         if (manifest != null) {
-            manifest.addManifestEntry(this.timeSeries.getDescription().getDatasetId(), this.timeSeries.getCdid());
+            manifest.addManifestEntry(details.landingPage.getDescription().getDatasetId(), this.timeSeries.getCdid());
         }
 
         return this.timeSeries;
