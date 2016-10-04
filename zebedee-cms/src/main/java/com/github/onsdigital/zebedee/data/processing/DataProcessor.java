@@ -9,6 +9,7 @@ import com.github.onsdigital.zebedee.data.importing.TimeseriesUpdateCommand;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.reader.ContentReader;
+import com.github.onsdigital.zebedee.service.TimeSeriesManifest;
 import com.github.onsdigital.zebedee.util.URIUtils;
 
 import java.io.IOException;
@@ -94,7 +95,7 @@ public class DataProcessor {
             TimeSeries newTimeSeries,
             DataIndex dataIndex
     ) throws ZebedeeException, IOException, URISyntaxException {
-        return processTimeseries(contentReader, details, newTimeSeries, dataIndex, Optional.<TimeseriesUpdateCommand>empty());
+        return processTimeseries(contentReader, details, newTimeSeries, dataIndex, Optional.<TimeseriesUpdateCommand>empty(), null);
     }
 
     /**
@@ -109,7 +110,8 @@ public class DataProcessor {
             DataPublicationDetails details,
             TimeSeries newTimeSeries,
             DataIndex dataIndex,
-            Optional<TimeseriesUpdateCommand> command
+            Optional<TimeseriesUpdateCommand> command,
+            TimeSeriesManifest manifest
     ) throws ZebedeeException, IOException, URISyntaxException {
 
         // Get current version of the time series (persists any manually entered data)
@@ -130,6 +132,10 @@ public class DataProcessor {
         // Log corrections and insertions
         corrections = dataMerge.corrections;
         insertions = dataMerge.insertions;
+
+        if (manifest != null) {
+            manifest.addManifestEntry(newTimeSeries);
+        }
 
         return this.timeSeries;
     }

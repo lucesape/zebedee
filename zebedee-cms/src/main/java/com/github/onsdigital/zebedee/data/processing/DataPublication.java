@@ -112,7 +112,7 @@ public class DataPublication {
 
                 // Build new timeseries
                 DataProcessor processor = new DataProcessor();
-                processor.processTimeseries(compositeContentReader, details, series, dataIndex, command);
+                processor.processTimeseries(compositeContentReader, details, series, dataIndex, command, manifest);
 
                 // Save files
                 if (saveTimeSeries) {
@@ -122,9 +122,9 @@ public class DataPublication {
 
                 // Retain the result to be added to any generated spreadsheet
                 results.add(processor.timeSeries);
-                if (manifest != null) {
+/*                if (manifest != null) {
                     manifest.addManifestEntry(series);
-                }
+                }*/
             }
 
             // Generate data files

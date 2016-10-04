@@ -400,7 +400,7 @@ public class DataProcessorTest {
                 pagesSet.getDetails(publishedReader, collectionReader.getReviewed()),
                 timeSeries,
                 zebedee.getDataIndex(),
-                command);
+                command, null);
 
         // Then
         // we expect the title to be that of the update command.
