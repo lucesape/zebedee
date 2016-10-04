@@ -48,6 +48,17 @@ public class TimeSeriesManifest {
         return this;
     }
 
+    public TimeSeriesManifest addManifestEntry(String datasetId, String cdid) {
+        TreeSet<String> filesByDataSet = dataSetMapping.get(datasetId);
+        if (filesByDataSet == null) {
+            filesByDataSet = new TreeSet<>();
+        }
+        Path cdidPath = Paths.get(dataIndex.getUriForCdid(cdid)).resolve(datasetId.toLowerCase());
+        filesByDataSet.add(cdidPath.toString());
+        dataSetMapping.put(datasetId, filesByDataSet);
+        return this;
+    }
+
     public TimeSeriesManifest addTimeSeriesZip(Path zipPath) {
         if (zipPath != null) {
             this.timeseriesZips.add(zipPath.toString());
