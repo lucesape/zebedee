@@ -104,7 +104,7 @@ public class ZebedeeLogBuilder extends LogMessageBuilder {
     }
 
 
-    public <T extends ZebedeeException> ZebedeeException logAndThrowX(Class<T> exceptionClass) throws ZebedeeException {
+    public <T extends ZebedeeException> ZebedeeException logAndThrowEX(Class<T> exceptionClass) throws ZebedeeException {
         this.log();
 
         if (BadRequestException.class.equals(exceptionClass)) {
@@ -151,12 +151,16 @@ public class ZebedeeLogBuilder extends LogMessageBuilder {
     }
 
     public ZebedeeLogBuilder collectionPath(Collection collection) {
-        addParameter(COLLECTION, collection.path.toString());
+        if (collection != null && collection.getPath() != null) {
+            addParameter(COLLECTION, collection.getPath().toString());
+        }
         return this;
     }
 
     public ZebedeeLogBuilder collectionId(Collection collection) {
-        addParameter(COLLECTION_ID, collection.getDescription().id);
+        if (collection != null && collection.getDescription() != null) {
+            addParameter(COLLECTION_ID, collection.getDescription().id);
+        }
         return this;
     }
 
@@ -166,7 +170,9 @@ public class ZebedeeLogBuilder extends LogMessageBuilder {
     }
 
     public ZebedeeLogBuilder collectionName(Collection collection) {
-        addParameter(COLLECTION_NAME, collection.getDescription().name);
+        if (collection != null && collection.getDescription() != null) {
+            addParameter(COLLECTION_NAME, collection.getDescription().name);
+        }
         return this;
     }
 

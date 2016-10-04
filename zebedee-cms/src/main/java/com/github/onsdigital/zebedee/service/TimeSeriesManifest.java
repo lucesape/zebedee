@@ -3,6 +3,8 @@ package com.github.onsdigital.zebedee.service;
 import com.github.onsdigital.zebedee.content.page.statistics.data.timeseries.TimeSeries;
 import com.github.onsdigital.zebedee.data.processing.DataIndex;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -81,7 +83,7 @@ public class TimeSeriesManifest {
         return this;
     }
 
-    public TimeSeriesManifest removeZip(Path zipPath) {
+    public TimeSeriesManifest removeZip(String zipPath) {
         this.timeseriesZips.remove(zipPath);
         return this;
     }
@@ -92,5 +94,25 @@ public class TimeSeriesManifest {
 
     public boolean isEmpty() {
         return this.dataSetMapping.isEmpty();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        TimeSeriesManifest manifest = (TimeSeriesManifest) obj;
+        return new EqualsBuilder()
+                .append(dataSetMapping, manifest.dataSetMapping)
+                .append(timeseriesZips, manifest.timeseriesZips)
+                .isEquals();
+    }
+
+    @Override
+    public int hashCode() {
+        return new HashCodeBuilder(17, 37).append(dataSetMapping).append(timeseriesZips).toHashCode();
     }
 }

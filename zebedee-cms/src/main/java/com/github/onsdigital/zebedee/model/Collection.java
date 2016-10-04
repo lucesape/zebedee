@@ -1126,5 +1126,9 @@ public class Collection {
     public Content getInProgress() {
         return inProgress;
     }
+
+    public Path getPath() {
+        return this.path;
+    }
 }
 

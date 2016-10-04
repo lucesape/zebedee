@@ -16,12 +16,14 @@ import java.io.OutputStream;
 import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logDebug;
@@ -43,6 +45,9 @@ public class TimeSeriesManifestService {
     private static ExecutorService executorService = Executors.newFixedThreadPool(20);
     private static final TimeSeriesManifestService instance = new TimeSeriesManifestService();
 
+    /**
+     * @return singleton instance of the service - use this instead of creating one.
+     */
     public static TimeSeriesManifestService get() {
         return instance;
     }
@@ -57,51 +62,108 @@ public class TimeSeriesManifestService {
      */
     public Boolean deleteGeneratedTimeSeriesFilesByDataId(String datasetId, DataIndex dataIndex, Collection collection,
                                                           Session session) throws ZebedeeException, IOException {
-        TimeSeriesManifest manifest = getCollectionManifest(collection, dataIndex);
+        boolean result = false;
+        TimeSeriesManifest manifest = getTimeSeriesManifest.apply(manifestPath(collection), dataIndex);
 
         if (!manifest.isEmpty()) {
             Optional<Set<Path>> deletes = manifest.getByDatasetId(datasetId);
+            if (deletes.isPresent()) {
+                try {
+                    executorService.invokeAll(
+                            deletes.get()
+                                    .stream()
+                                    .map(targetUri -> callableFactory.apply(collection, targetUri))
+                                    .collect(Collectors.toList()));
 
-            if (!deletes.isPresent()) {
-                logDebug(NO_DELETES_LOG_MSG).collectionName(collection).user(session.email).dataSetId(datasetId).log();
-                return false;
+                    manifest.removeDataset(datasetId);
+                    saveCollectionManifest.apply(manifestPath(collection), manifest);
+                    result = true;
+                } catch (InterruptedException ex) {
+                    throw logError(ex, ERROR_LOG_MSG).collectionName(collection).user(session.email)
+                            .logAndThrowEX(BadRequestException.class);
+                }
             }
-            try {
-                executorService.invokeAll(deletes.get()
-                        .stream()
-                        .map(targetUri -> cleanUpTask(collection, targetUri))
-                        .collect(Collectors.toList()));
-                manifest.removeDataset(datasetId);
-                logInfo(LOG_MSG).collectionName(collection).user(session.email).dataSetId(datasetId).log();
-                saveCollectionManifest(collection, manifest);
-                return true;
-            } catch (InterruptedException ex) {
-                throw logError(ex, ERROR_LOG_MSG).collectionName(collection).user(session.email)
-                        .logAndThrowX(BadRequestException.class);
-            }
+            logDebug(result ? LOG_MSG : NO_DELETES_LOG_MSG).collectionName(collection).user(session.email)
+                    .dataSetId(datasetId).log();
         }
-        return false;
+        return result;
     }
 
     public boolean deleteGeneratedTimeSeriesZips(Collection collection, Session session, DataIndex dataIndex)
             throws ZebedeeException, IOException {
         TimeSeriesManifest manifest = getCollectionManifest(collection, dataIndex);
-        Set<String> zips = manifest.getTimeseriesZips();
         boolean result = false;
 
-        if (!zips.isEmpty()) {
-            for (String path : zips) {
-                collection.deleteFile(path);
-                manifest.removeZip(Paths.get(path));
+        if (!manifest.getTimeseriesZips().isEmpty()) {
+            Iterator<String> iterator = manifest.getTimeseriesZips().iterator();
+            while (iterator.hasNext()) {
+                String zipPath = iterator.next();
+                collection.deleteFile(zipPath);
+                iterator.remove();
             }
             logDebug(ZIPS_REMOVED_LOG_MSG).collectionName(collection).user(session.email).log();
-            saveCollectionManifest(collection, manifest);
+            saveCollectionManifest.apply(manifestPath(collection), manifest);
             result = true;
         }
         return result;
     }
 
-    private Callable<Boolean> cleanUpTask(Collection collection, Path uri) {
+    public boolean saveCollectionManifest(Collection collection, TimeSeriesManifest manifest) {
+        return saveCollectionManifest.apply(manifestPath(collection), manifest);
+    }
+
+    public TimeSeriesManifest getCollectionManifest(Collection collection, DataIndex dataIndex) throws ZebedeeException {
+        return getTimeSeriesManifest.apply(manifestPath(collection), dataIndex);
+    }
+
+    /**
+     * {@link BiFunction} creates {@link Callable} jobs to delete {@link TimeSeriesManifest} entries.
+     */
+    private static BiFunction<Collection, Path, Callable<Boolean>> callableFactory = (collection, uri) -> () -> {
+        if (collection.isInCollection(uri.toString())) {
+            Path deletePath = collection.find(uri.toString());
+            File parent = deletePath.getParent().toFile();
+            FileUtils.deleteQuietly(deletePath.toFile());
+
+            if (parent != null && parent.isDirectory() && parent.list().length == 0) {
+                FileUtils.deleteQuietly(parent);
+            }
+        }
+        return true;
+    };
+
+    /**
+     * {@link BiFunction} saves a {@link TimeSeriesManifest} as a json file in the root of the collection.
+     */
+    private static BiFunction<Path, TimeSeriesManifest, Boolean> saveCollectionManifest = (manifestPath, manifest) -> {
+        try (OutputStream out = Files.newOutputStream(manifestPath)) {
+            IOUtils.write(new Gson().toJson(manifest).getBytes(), out);
+        } catch (IOException e) {
+            logError(e, "Unexpected error while attempting to save TimeSeriesManifest")
+                    .path(manifestPath.toString()).throwUnchecked(e);
+        }
+        return true;
+    };
+
+    private static BiFunction<Path, DataIndex, TimeSeriesManifest> getTimeSeriesManifest = ((manifestPath, dataIndex) -> {
+        try {
+            if (Files.exists(manifestPath)) {
+                try (InputStream in = Files.newInputStream(manifestPath)) {
+                    StringWriter writer = new StringWriter();
+                    IOUtils.copy(in, writer);
+                    TimeSeriesManifest manifest = new Gson().fromJson(writer.toString(), TimeSeriesManifest.class);
+                    manifest.setDataIndex(dataIndex);
+                    return manifest;
+                }
+            }
+            return new TimeSeriesManifest(dataIndex);
+        } catch (Exception ex) {
+            throw logError(ex, "Unexpected error while attempting to read timeseries-manifest.json")
+                    .path(manifestPath.toString()).uncheckedException(ex);
+        }
+    });
+
+/*    private Callable<Boolean> cleanUpTask(Collection collection, Path uri) {
         return () -> {
             if (collection.isInCollection(uri.toString())) {
                 Path deletePath = collection.find(uri.toString());
@@ -114,15 +176,19 @@ public class TimeSeriesManifestService {
             }
             return true;
         };
-    }
+    }*/
 
-    public void saveCollectionManifest(Collection collection, TimeSeriesManifest manifest) throws IOException {
+/*    public boolean saveCollectionManifest(Collection collection, TimeSeriesManifest manifest) {
         try (OutputStream out = Files.newOutputStream(manifestPath(collection))) {
             IOUtils.write(new Gson().toJson(manifest).getBytes(), out);
+        } catch (IOException e) {
+            logError(e, "Unexpected error while attempting to save TimeSeriesManifest")
+                    .collectionPath(collection).throwUnchecked(e);
         }
-    }
+        return true;
+    }*/
 
-    public TimeSeriesManifest getCollectionManifest(Collection collection, DataIndex dataIndex) throws ZebedeeException {
+/*    public TimeSeriesManifest getCollectionManifest(Collection collection, DataIndex dataIndex) throws ZebedeeException {
         try {
             Path manifestPath = manifestPath(collection);
             if (Files.exists(manifestPath)) {
@@ -137,11 +203,11 @@ public class TimeSeriesManifestService {
             return new TimeSeriesManifest(dataIndex);
         } catch (Exception ex) {
             throw logError(ex, "Unexpected error while attempting to read timeseries-manifest.json")
-                    .collectionPath(collection).logAndThrowX(BadRequestException.class);
+                    .collectionPath(collection).logAndThrowEX(BadRequestException.class);
         }
-    }
+    }*/
 
     private Path manifestPath(Collection collection) {
-        return collection.path.resolve(FILENAME);
+        return collection.getPath().resolve(FILENAME);
     }
 }
