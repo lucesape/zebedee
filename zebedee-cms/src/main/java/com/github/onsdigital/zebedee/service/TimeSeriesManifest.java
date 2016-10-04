@@ -53,6 +53,7 @@ public class TimeSeriesManifest {
         if (filesByDataSet == null) {
             filesByDataSet = new TreeSet<>();
         }
+        cdid = cdid.toLowerCase();
         Path cdidPath = Paths.get(dataIndex.getUriForCdid(cdid)).resolve(datasetId.toLowerCase());
         filesByDataSet.add(cdidPath.toString());
         dataSetMapping.put(datasetId, filesByDataSet);
