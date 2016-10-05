@@ -114,6 +114,10 @@ public class TimeSeriesManifest {
         return this;
     }
 
+    public Map<String, TreeSet<String>> getDataSetMapping() {
+        return dataSetMapping;
+    }
+
     public void setDataIndex(DataIndex dataIndex) {
         this.dataIndex = dataIndex;
     }
