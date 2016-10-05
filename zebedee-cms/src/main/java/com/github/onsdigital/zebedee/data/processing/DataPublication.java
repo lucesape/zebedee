@@ -122,9 +122,6 @@ public class DataPublication {
 
                 // Retain the result to be added to any generated spreadsheet
                 results.add(processor.timeSeries);
-/*                if (manifest != null) {
-                    manifest.addManifestEntry(series);
-                }*/
             }
 
             // Generate data files
@@ -149,8 +146,9 @@ public class DataPublication {
      *@param updateCommands @throws IOException
      * @throws ZebedeeException
      */
-    public void process(ContentReader publishedContentReader, ContentReader reviewedContentReader, ContentWriter reviewedContentWriter, DataIndex dataIndex, List<TimeseriesUpdateCommand> updateCommands) throws IOException, ZebedeeException, URISyntaxException {
-        // TODO
+    public void process(ContentReader publishedContentReader, ContentReader reviewedContentReader,
+                        ContentWriter reviewedContentWriter, DataIndex dataIndex, List<TimeseriesUpdateCommand> updateCommands)
+            throws IOException, ZebedeeException, URISyntaxException {
         process(publishedContentReader, reviewedContentReader, reviewedContentWriter, true, dataIndex, updateCommands, null);
     }
 

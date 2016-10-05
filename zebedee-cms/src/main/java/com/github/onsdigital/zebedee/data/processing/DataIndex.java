@@ -4,6 +4,7 @@ import com.github.onsdigital.zebedee.content.page.statistics.data.timeseries.Tim
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.model.content.item.VersionedContentItem;
 import com.github.onsdigital.zebedee.reader.ContentReader;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -40,6 +41,9 @@ public class DataIndex {
     }
 
     public String getUriForCdid(String cdid) {
+        if (StringUtils.isNotEmpty(cdid)) {
+            cdid = cdid.trim().toLowerCase();
+        }
         return index.get(cdid);
     }
 

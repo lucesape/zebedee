@@ -3,6 +3,7 @@ package com.github.onsdigital.zebedee.service;
 import com.github.onsdigital.zebedee.content.page.statistics.data.timeseries.TimeSeries;
 import com.github.onsdigital.zebedee.data.processing.DataIndex;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
@@ -15,10 +16,18 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logError;
+import static java.text.MessageFormat.format;
+
 /**
  *
  */
 public class TimeSeriesManifest {
+
+    private static final String STRING_ARGO_INVALID_MSG = TimeSeriesManifest.class.getSimpleName()
+            + ": parameter {0} is required and cannot be null or empty";
+    private static final String CDID_PARAM = "CDID";
+    private static final String DATASET_ID = "DATASET_ID";
 
     private transient DataIndex dataIndex;
     private Map<String, TreeSet<String>> dataSetMapping;
@@ -32,10 +41,7 @@ public class TimeSeriesManifest {
 
     public TimeSeriesManifest addManifestEntry(TimeSeries t) {
         final String datasetId = t.getDescription().getDatasetId();
-        final String cdid = t.getCdid().toLowerCase();
-        Path cdidPath = Paths.get(dataIndex.getUriForCdid(cdid))
-                .resolve(datasetId.toLowerCase());
-        return addManifestEntry(datasetId, cdidPath);
+        return addManifestEntry(datasetId, getCDIDUri(t.getCdid(), datasetId));
     }
 
     public TimeSeriesManifest addManifestEntry(String dataSetId, Path filePath) {
@@ -44,20 +50,24 @@ public class TimeSeriesManifest {
             filesByDataSet = new TreeSet<>();
         }
         filesByDataSet.add(filePath.toString());
-        dataSetMapping.put(dataSetId, filesByDataSet);
+        dataSetMapping.put(dataSetId.toUpperCase(), filesByDataSet);
         return this;
     }
 
-    public TimeSeriesManifest addManifestEntry(String datasetId, String cdid) {
-        TreeSet<String> filesByDataSet = dataSetMapping.get(datasetId);
-        if (filesByDataSet == null) {
-            filesByDataSet = new TreeSet<>();
+    private Path getCDIDUri(String cdid, String datasetId) {
+        try {
+            return Paths.get(dataIndex.getUriForCdid(validate(cdid, CDID_PARAM))).resolve(validate(datasetId, DATASET_ID)
+                    .toLowerCase());
+        } catch (IllegalArgumentException ex) {
+            throw logError(ex).uncheckedException(ex);
         }
-        cdid = cdid.toLowerCase();
-        Path cdidPath = Paths.get(dataIndex.getUriForCdid(cdid)).resolve(datasetId.toLowerCase());
-        filesByDataSet.add(cdidPath.toString());
-        dataSetMapping.put(datasetId, filesByDataSet);
-        return this;
+    }
+
+    private String validate(String value, String name) throws IllegalArgumentException {
+        if (StringUtils.isEmpty(value)) {
+            throw new IllegalArgumentException(format(STRING_ARGO_INVALID_MSG, name));
+        }
+        return value;
     }
 
     public TimeSeriesManifest addTimeSeriesZip(Path zipPath) {
@@ -80,17 +90,21 @@ public class TimeSeriesManifest {
     }
 
     public Optional<Set<Path>> getByDatasetId(String datasetId) {
+        if (StringUtils.isNotEmpty(datasetId)) {
+            datasetId = datasetId.toUpperCase();
+        }
         Set<String> paths = this.dataSetMapping.get(datasetId);
         if (paths == null || paths.isEmpty()) {
             return Optional.empty();
         }
 
-        return Optional.of(paths.stream()
-                .map(string -> Paths.get(string))
-                .collect(Collectors.toSet()));
+        return Optional.of(paths.stream().map(string -> Paths.get(string)).collect(Collectors.toSet()));
     }
 
     public TimeSeriesManifest removeDataset(String datasetId) {
+        if (StringUtils.isNotEmpty(datasetId)) {
+            datasetId = datasetId.toUpperCase();
+        }
         this.dataSetMapping.remove(datasetId);
         return this;
     }
@@ -117,10 +131,8 @@ public class TimeSeriesManifest {
             return false;
         }
         TimeSeriesManifest manifest = (TimeSeriesManifest) obj;
-        return new EqualsBuilder()
-                .append(dataSetMapping, manifest.dataSetMapping)
-                .append(timeseriesZips, manifest.timeseriesZips)
-                .isEquals();
+        return new EqualsBuilder().append(dataSetMapping, manifest.dataSetMapping).append(timeseriesZips,
+                manifest.timeseriesZips).isEquals();
     }
 
     @Override

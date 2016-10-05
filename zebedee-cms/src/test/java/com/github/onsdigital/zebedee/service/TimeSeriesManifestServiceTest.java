@@ -154,9 +154,6 @@ public class TimeSeriesManifestServiceTest {
 
     }
 
-
-
-
     @Ignore
     @Test
     public void shouldDeleteTimeSeriesZips() throws Exception {

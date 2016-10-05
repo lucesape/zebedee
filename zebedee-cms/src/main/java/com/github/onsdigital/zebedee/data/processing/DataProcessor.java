@@ -124,7 +124,8 @@ public class DataProcessor {
 
         // Combine the time series values
         DataMerge dataMerge = new DataMerge();
-        this.timeSeries = dataMerge.merge(this.timeSeries, newTimeSeries, details.landingPage.getDescription().getDatasetId());
+        this.timeSeries = dataMerge.merge(this.timeSeries, newTimeSeries, details.landingPage.getDescription()
+                .getDatasetId());
 
         // Ensure time series labels are up to date
         new TimeSeriesLabeller().applyLabels(this.timeSeries);
@@ -133,10 +134,8 @@ public class DataProcessor {
         corrections = dataMerge.corrections;
         insertions = dataMerge.insertions;
 
-        System.out.println("details.landingPage.getDescription().getDatasetId() = " + details.landingPage.getDescription().getDatasetId());
-
         if (manifest != null) {
-            manifest.addManifestEntry(details.landingPage.getDescription().getDatasetId(), this.timeSeries.getCdid());
+            manifest.addManifestEntry(this.timeSeries);
         }
 
         return this.timeSeries;
@@ -243,7 +242,8 @@ public class DataProcessor {
      * @throws ZebedeeException
      * @throws IOException
      */
-    TimeSeries initialTimeseries(TimeSeries series, ContentReader contentReader, DataPublicationDetails details, DataIndex dataIndex) throws ZebedeeException, IOException, URISyntaxException {
+    TimeSeries initialTimeseries(TimeSeries series, ContentReader contentReader, DataPublicationDetails details,
+                                 DataIndex dataIndex) throws ZebedeeException, IOException, URISyntaxException {
 
         String timeseriesUri = getDatasetBasedUriForTimeseries(series, details, dataIndex);
 
