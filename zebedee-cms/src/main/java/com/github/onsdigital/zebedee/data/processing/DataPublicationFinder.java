@@ -67,6 +67,10 @@ public class DataPublicationFinder {
     }
 
     private List<DataPublication> logOutcomeAndReturnResult(List<DataPublication> results, TimeSeriesManifest manifest) {
+        if (manifest == null) {
+            return results;
+        }
+
         String logMessage;
         if (results.isEmpty() && manifest.isEmpty()) {
             logMessage = NO_TIME_SERIES_IN_PUBLISH_MSG;

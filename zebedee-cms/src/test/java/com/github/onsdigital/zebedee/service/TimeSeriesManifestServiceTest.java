@@ -8,7 +8,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -20,6 +19,9 @@ import java.io.StringWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.function.BiFunction;
 
@@ -27,7 +29,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -62,42 +63,46 @@ public class TimeSeriesManifestServiceTest {
     private TimeSeriesManifest timeSeriesManifestMock;
 
     @Mock
-    private BiFunction<Path, DataIndex, TimeSeriesManifest> getTimeSeriesManifestMock;
+    private Callable<Boolean> callableMock;
 
     @Mock
-    private BiFunction<Path, TimeSeriesManifest, Boolean> saveCollectionManifestMock;
+    private BiFunction<Path, DataIndex, TimeSeriesManifest> getTimeSeriesManifestFunc;
+
+    @Mock
+    private BiFunction<Path, TimeSeriesManifest, Boolean> saveCollectionManifestFunc;
+
+    @Mock
+    private BiFunction<Collection, Path, Callable<Boolean>> callableFactoryFunction;
 
     private TimeSeriesManifestService service;
     private TimeSeriesManifest expectedManifest;
     private Path collectionRootPath;
     private Path timeSeriesManifestPath;
+    private List<Callable<Boolean>> callableList;
 
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
         service = TimeSeriesManifestService.get();
-
+        callableList = new ArrayList<>();
+        callableList.add(callableMock);
         expectedManifest = new TimeSeriesManifest(null).addManifestEntry(DATASET_ID, TS_FILE_PATH);
-
-
         setField(service, "executorService", executorServiceMock);
-    }
-
-    private void createManifestFile() throws Exception {
-        collectionRootPath = Files.createTempDirectory(collectionPath.toString());
-        timeSeriesManifestPath = Files.createFile(collectionRootPath.resolve(FILENAME));
     }
 
     @Test
     public void shouldSaveCollectionManifest() throws Exception {
-        when(saveCollectionManifestMock.apply(any(Path.class), any(TimeSeriesManifest.class))).thenReturn(true);
+        when(saveCollectionManifestFunc.apply(any(Path.class), any(TimeSeriesManifest.class)))
+                .thenReturn(true);
         when(collectionMock.getPath()).thenReturn(collectionPath);
 
-        setField(service, "saveCollectionManifest", saveCollectionManifestMock);
+        service = new TimeSeriesManifestService(executorServiceMock, callableFactoryFunction,
+                saveCollectionManifestFunc, getTimeSeriesManifestFunc);
 
-        assertThat("Expected service to return true", service.saveCollectionManifest(collectionMock, timeSeriesManifestMock), is(true));
+        assertThat("Expected service to return true", service.saveCollectionManifest(collectionMock,
+                timeSeriesManifestMock), is(true));
 
-        verify(saveCollectionManifestMock, times(1)).apply(collectionPath.resolve(FILENAME), timeSeriesManifestMock);
+        verify(saveCollectionManifestFunc, times(1)).apply(collectionPath.resolve(FILENAME), timeSeriesManifestMock);
     }
 
     @Test
@@ -105,28 +110,26 @@ public class TimeSeriesManifestServiceTest {
         String targetDatasetId = "abcde";
         TimeSeriesManifest manifest = new TimeSeriesManifest(dataIndexMock).addManifestEntry(DATASET_ID, TS_FILE_PATH);
 
-        setField(service, "executorService", executorServiceMock);
-        setField(service, "saveCollectionManifest", saveCollectionManifestMock);
-        setField(service, "getTimeSeriesManifest", getTimeSeriesManifestMock);
+        service = new TimeSeriesManifestService(executorServiceMock, callableFactoryFunction, saveCollectionManifestFunc,
+                getTimeSeriesManifestFunc);
 
         when(collectionMock.getPath())
                 .thenReturn(collectionPath);
 
-        when(getTimeSeriesManifestMock.apply(manifestPath, dataIndexMock))
+        when(getTimeSeriesManifestFunc.apply(manifestPath, dataIndexMock))
                 .thenReturn(manifest);
 
         boolean result = service.deleteGeneratedTimeSeriesFilesByDataId(targetDatasetId, dataIndexMock,
                 collectionMock, sessionMock);
 
         assertThat("Expected result to be false for a datasetId not in the manifest", result, is(false));
-        verify(getTimeSeriesManifestMock, times(1)).apply(manifestPath, dataIndexMock);
-        verifyZeroInteractions(executorServiceMock, saveCollectionManifestMock);
+        verify(getTimeSeriesManifestFunc, times(1)).apply(manifestPath, dataIndexMock);
+        verifyZeroInteractions(executorServiceMock, saveCollectionManifestFunc);
     }
 
     /**
      * Test reads manifest from file system and checks it is as expected.
      */
-    @Ignore
     @Test
     public void shouldGetExistingTimeSeriesManifest() throws Exception {
         createManifestFile();
@@ -141,12 +144,13 @@ public class TimeSeriesManifestServiceTest {
 
     @Test
     public void shouldReturnNewManifestIfOneDoesNotExist() throws Exception {
-        setField(service, "getTimeSeriesManifest", getTimeSeriesManifestMock);
+        service = new TimeSeriesManifestService(executorServiceMock, callableFactoryFunction, saveCollectionManifestFunc,
+                getTimeSeriesManifestFunc);
 
         when(collectionMock.getPath())
                 .thenReturn(collectionPath);
 
-        when(getTimeSeriesManifestMock.apply(manifestPath, dataIndexMock))
+        when(getTimeSeriesManifestFunc.apply(manifestPath, dataIndexMock))
                 .thenReturn(new TimeSeriesManifest(null));
 
         TimeSeriesManifest actualManifest = service.getCollectionManifest(collectionMock, dataIndexMock);
@@ -154,7 +158,6 @@ public class TimeSeriesManifestServiceTest {
 
     }
 
-    @Ignore
     @Test
     public void shouldDeleteTimeSeriesZips() throws Exception {
         createManifestFile();
@@ -170,13 +173,36 @@ public class TimeSeriesManifestServiceTest {
         verify(collectionMock, times(1)).deleteFile("/test-zip.zip");
     }
 
+    @Test
+    public void shouldDeleteTimeSeriesFiles() throws Exception {
+        service = new TimeSeriesManifestService(executorServiceMock, callableFactoryFunction, saveCollectionManifestFunc,
+                getTimeSeriesManifestFunc);
 
+        TimeSeriesManifest manifestMock = new TimeSeriesManifest(dataIndexMock).addManifestEntry(DATASET_ID, TS_FILE_PATH);
+
+        when(getTimeSeriesManifestFunc.apply(manifestPath, dataIndexMock))
+                .thenReturn(manifestMock);
+        when(collectionMock.getPath())
+                .thenReturn(collectionPath);
+        when(callableFactoryFunction.apply(collectionMock, TS_FILE_PATH))
+                .thenReturn(callableMock);
+
+        service.deleteGeneratedTimeSeriesFilesByDataId(DATASET_ID, dataIndexMock, collectionMock, sessionMock);
+
+        verify(executorServiceMock, times(1)).invokeAll(callableList);
+        verify(saveCollectionManifestFunc, times(1)).apply(manifestPath, manifestMock);
+    }
 
     @After
     public void cleanUp() throws Exception {
         if (collectionRootPath != null) {
             FileUtils.deleteQuietly(collectionRootPath.toFile());
         }
+    }
+
+    private void createManifestFile() throws Exception {
+        collectionRootPath = Files.createTempDirectory(collectionPath.toString());
+        timeSeriesManifestPath = Files.createFile(collectionRootPath.resolve(FILENAME));
     }
 
     private void writeJson(Path path, TimeSeriesManifest manifest) throws Exception {
