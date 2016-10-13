@@ -2,10 +2,12 @@ package com.github.onsdigital.zebedee.service;
 
 import com.github.onsdigital.zebedee.content.page.statistics.data.timeseries.TimeSeries;
 import com.github.onsdigital.zebedee.data.processing.DataIndex;
+import com.github.onsdigital.zebedee.exceptions.TimeSeriesManifestException;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -16,18 +18,19 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
-import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logError;
-import static java.text.MessageFormat.format;
+import static com.github.onsdigital.zebedee.exceptions.TimeSeriesManifestException.ErrorType.DATASET_ID_NULL_OR_EMPTY;
+import static com.github.onsdigital.zebedee.exceptions.TimeSeriesManifestException.ErrorType.FILE_PATH_NULL;
+import static com.github.onsdigital.zebedee.exceptions.TimeSeriesManifestException.ErrorType.TIME_SERIES_DESC_NULL;
+import static com.github.onsdigital.zebedee.exceptions.TimeSeriesManifestException.ErrorType.TIME_SERIES_NULL;
 
 /**
  *
  */
 public class TimeSeriesManifest {
 
-    private static final String STRING_ARGO_INVALID_MSG = TimeSeriesManifest.class.getSimpleName()
-            + ": parameter {0} is required and cannot be null or empty";
-    private static final String CDID_PARAM = "CDID";
-    private static final String DATASET_ID = "DATASET_ID";
+    static final String DATASET_ID_REQUIRED_MSG = "DatasetId is required and cannot be null.";
+    static final String CDID_PARAM = "CDID";
+    static final String DATASET_ID = "DATASET_ID";
 
     private transient DataIndex dataIndex;
     private Map<String, TreeSet<String>> dataSetMapping;
@@ -39,13 +42,44 @@ public class TimeSeriesManifest {
         this.timeseriesZips = new TreeSet<>();
     }
 
-    public TimeSeriesManifest addManifestEntry(TimeSeries t) {
+    /**
+     * Add an entry to the manifest.
+     *
+     * @param t {@link TimeSeries} to add the entry from.
+     * @throws TimeSeriesManifestException problem adding entry to manifest.
+     */
+    public TimeSeriesManifest addManifestEntry(TimeSeries t) throws TimeSeriesManifestException {
+        if (t == null) {
+            throw new TimeSeriesManifestException(TIME_SERIES_NULL);
+        }
+        if (t.getDescription() == null) {
+            throw new TimeSeriesManifestException(TIME_SERIES_DESC_NULL);
+        }
+        if (StringUtils.isEmpty(t.getDescription().getDatasetId())) {
+            throw new TimeSeriesManifestException(DATASET_ID_NULL_OR_EMPTY);
+        }
+
         final String datasetId = t.getDescription().getDatasetId();
         return addManifestEntry(datasetId, getCDIDUri(t.getCdid(), datasetId));
     }
 
-    public TimeSeriesManifest addManifestEntry(String dataSetId, Path filePath) {
-        TreeSet<String> filesByDataSet = dataSetMapping.get(dataSetId);
+    /**
+     * Add an entry to the manifest.
+     *
+     * @param dataSetId the datasetId to add.
+     * @param filePath the path to the file.
+     * @return
+     * @throws TimeSeriesManifestException problem adding entry to manifest.
+     */
+    public TimeSeriesManifest addManifestEntry(String dataSetId, Path filePath) throws TimeSeriesManifestException {
+        if (StringUtils.isEmpty(dataSetId)) {
+            throw new TimeSeriesManifestException(DATASET_ID_NULL_OR_EMPTY);
+        }
+        if (filePath == null) {
+            throw new TimeSeriesManifestException(FILE_PATH_NULL);
+        }
+
+        TreeSet<String> filesByDataSet = dataSetMapping.get(dataSetId.toUpperCase());
         if (filesByDataSet == null) {
             filesByDataSet = new TreeSet<>();
         }
@@ -54,18 +88,14 @@ public class TimeSeriesManifest {
         return this;
     }
 
-    private Path getCDIDUri(String cdid, String datasetId) {
-        try {
-            return Paths.get(dataIndex.getUriForCdid(validate(cdid, CDID_PARAM))).resolve(validate(datasetId, DATASET_ID)
-                    .toLowerCase());
-        } catch (IllegalArgumentException ex) {
-            throw logError(ex).uncheckedException(ex);
-        }
+    private Path getCDIDUri(String cdid, String datasetId) throws TimeSeriesManifestException {
+        return Paths.get(dataIndex.getUriForCdid(validate(cdid, CDID_PARAM))).resolve(validate(datasetId, DATASET_ID)
+                .toLowerCase());
     }
 
-    private String validate(String value, String name) throws IllegalArgumentException {
+    private String validate(String value, String name) throws TimeSeriesManifestException {
         if (StringUtils.isEmpty(value)) {
-            throw new IllegalArgumentException(format(STRING_ARGO_INVALID_MSG, name));
+            throw new TimeSeriesManifestException(name);
         }
         return value;
     }
@@ -142,5 +172,13 @@ public class TimeSeriesManifest {
     @Override
     public int hashCode() {
         return new HashCodeBuilder(17, 37).append(dataSetMapping).append(timeseriesZips).toHashCode();
+    }
+
+    @Override
+    public String toString() {
+        return new ToStringBuilder(this)
+                .append("dataSetMapping", dataSetMapping)
+                .append("timeseriesZips", timeseriesZips)
+                .toString();
     }
 }
