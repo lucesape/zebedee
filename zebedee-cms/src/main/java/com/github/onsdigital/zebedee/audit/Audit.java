@@ -40,7 +40,7 @@ public class Audit {
         USER_DELETED("User deleted"),
 
         /**
-         * Permission events.
+         * VaultPermission events.
          */
         ADMIN_PERMISSION_ADDED("Administrator permission added"),
 

@@ -8,8 +8,9 @@ import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.CollectionDescription;
 import com.github.onsdigital.zebedee.json.CollectionType;
-import com.github.onsdigital.zebedee.json.Keyring;
 import com.github.onsdigital.zebedee.json.Session;
+import com.github.onsdigital.zebedee.reader.util.RequestUtils;
+import com.github.onsdigital.zebedee.util.permissions.UserToken;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.http.HttpStatus;
 
@@ -38,17 +39,14 @@ public class Collection {
     public CollectionDescription get(HttpServletRequest request, HttpServletResponse response)
             throws IOException, ZebedeeException {
 
+        UserToken.isValid(RequestUtils.getSessionId(request));
+
         com.github.onsdigital.zebedee.model.Collection collection = Collections
                 .getCollection(request);
 
         // Check whether we found the collection:
         if (collection == null) {
             throw new NotFoundException("The collection you are trying to delete was not found.");
-        }
-        // Check whether we have access
-        Session session = Root.zebedee.getSessions().get(request);
-        if (Root.zebedee.getPermissions().canView(session.email, collection.description) == false) {
-            throw new UnauthorizedException("You are not authorised to delete collections.");
         }
 
         // Collate the result:
@@ -89,19 +87,12 @@ public class Collection {
                                         HttpServletResponse response,
                                         CollectionDescription collectionDescription) throws IOException, ZebedeeException {
 
+        UserToken.isValid(RequestUtils.getSessionId(request))
+                 .isAdminOrPublisher();
+
         if (StringUtils.isBlank(collectionDescription.name)) {
             response.setStatus(HttpStatus.BAD_REQUEST_400);
             return null;
-        }
-
-        Session session = Root.zebedee.getSessions().get(request);
-        if (Root.zebedee.getPermissions().canEdit(session.email) == false) {
-            throw new UnauthorizedException("You are not authorised to create collections.");
-        }
-
-        Keyring keyring = Root.zebedee.getKeyringCache().get(session);
-        if (keyring == null) {
-            throw new UnauthorizedException("Keyring is not initialised.");
         }
 
         collectionDescription.name = StringUtils.trim(collectionDescription.name);
@@ -111,18 +102,18 @@ public class Collection {
         }
 
         com.github.onsdigital.zebedee.model.Collection collection = com.github.onsdigital.zebedee.model.Collection.create(
-                collectionDescription, Root.zebedee, session);
+                collectionDescription, Root.zebedee, null); //session);
 
         if (collection.description.type.equals(CollectionType.scheduled)) {
             Root.schedulePublish(collection);
         }
 
-        Audit.Event.COLLECTION_CREATED
-                .parameters()
-                .host(request)
-                .collection(collection)
-                .actionedBy(session.email)
-                .log();
+        //Audit.Event.COLLECTION_CREATED
+        //        .parameters()
+        //        .host(request)
+        //        .collection(collection)
+        //        .actionedBy(session.email)
+        //        .log();
 
         return collection.description;
     }
@@ -134,10 +125,8 @@ public class Collection {
             CollectionDescription collectionDescription
     ) throws IOException, ZebedeeException {
 
-        Session session = Root.zebedee.getSessions().get(request);
-        if (Root.zebedee.getPermissions().canEdit(session.email) == false) {
-            throw new UnauthorizedException("You are not authorised to update collections.");
-        }
+        UserToken.isValid(RequestUtils.getSessionId(request))
+                .isPublisher();
 
         com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
         com.github.onsdigital.zebedee.model.Collection updatedCollection = collection.update(
@@ -145,13 +134,13 @@ public class Collection {
                 collectionDescription,
                 Root.zebedee,
                 Root.getScheduler(),
-                session);
+                new Session());
 
         Audit.Event.COLLECTION_UPDATED
                 .parameters()
                 .host(request)
                 .fromTo(collection.path.toString(), updatedCollection.path.toString())
-                .actionedBy(session.email)
+                .actionedBy(new Session().email)
                 .log();
 
         return updatedCollection.description;
@@ -175,7 +164,7 @@ public class Collection {
             ZebedeeException {
 
         com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
-        Session session = Root.zebedee.getSessions().get(request);
+        Session session = new Session(); //Root.zebedee.getSessions().get(request);
 
         Root.zebedee.getCollections().delete(collection, session);
 

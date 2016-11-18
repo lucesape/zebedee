@@ -1,6 +1,5 @@
 package com.github.onsdigital.zebedee.model;
 
-import com.github.davidcarboni.cryptolite.Keys;
 import com.github.davidcarboni.cryptolite.Random;
 import com.github.davidcarboni.restolino.json.Serialiser;
 import com.github.onsdigital.zebedee.Zebedee;
@@ -11,6 +10,7 @@ import com.github.onsdigital.zebedee.json.*;
 import com.github.onsdigital.zebedee.model.approval.tasks.ReleasePopulator;
 import com.github.onsdigital.zebedee.model.content.item.ContentItemVersion;
 import com.github.onsdigital.zebedee.model.content.item.VersionedContentItem;
+import com.github.onsdigital.zebedee.model.decryption.DecryptedCollectionWriter;
 import com.github.onsdigital.zebedee.model.publishing.scheduled.Scheduler;
 import com.github.onsdigital.zebedee.persistence.model.CollectionHistoryEvent;
 import com.github.onsdigital.zebedee.reader.CollectionReader;
@@ -106,7 +106,7 @@ public class Collection {
      * @return
      * @throws IOException
      */
-    public static Collection create(CollectionDescription collectionDescription, Zebedee zebedee, Session session)
+    public static Collection create(CollectionDescription collectionDescription, Zebedee zebedee, Session session1)
             throws IOException, ZebedeeException {
 
         collectionDescription.isEncrypted = true; // force encryption on new collections.
@@ -122,7 +122,7 @@ public class Collection {
 
         CreateCollectionFolders(filename, rootCollectionsPath);
 
-        collectionDescription.AddEvent(new Event(new Date(), EventType.CREATED, session.email));
+        collectionDescription.AddEvent(new Event(new Date(), EventType.CREATED, "N/A")); //session.email));
         // Create the description:
         Path collectionDescriptionPath = rootCollectionsPath.resolve(filename
                 + ".json");
@@ -131,24 +131,24 @@ public class Collection {
         }
 
         Collection collection = new Collection(rootCollectionsPath.resolve(filename), zebedee);
-        getCollectionHistoryDao().saveCollectionHistoryEvent(collection, session, COLLECTION_CREATED, collectionCreated
+        getCollectionHistoryDao().saveCollectionHistoryEvent(collection, new Session(), COLLECTION_CREATED, collectionCreated
                 (collectionDescription));
 
-        if (collectionDescription.teams != null) {
-            for (String teamName : collectionDescription.teams) {
-                Team team = zebedee.getTeams().findTeam(teamName);
-                zebedee.getPermissions().addViewerTeam(collectionDescription, team, session);
-            }
-        }
+        //if (collectionDescription.teams != null) {
+        //    for (String teamName : collectionDescription.teams) {
+        //        Team team = zebedee.getTeams().findTeam(teamName);
+        //        zebedee.getPermissions().addViewerTeam(collectionDescription, team, session);
+        //    }
+        //}
 
         // Encryption
         // assign a key for the collection to the session user
-        KeyManager.assignKeyToUser(zebedee, zebedee.getUsers().get(session.email), collection.description.id, Keys.newSecretKey());
+        //KeyManager.assignKeyToUser(zebedee, zebedee.getUsers().get(session.email), collection.description.id, Keys.newSecretKey());
         // get the session user to distribute the key to all
-        KeyManager.distributeCollectionKey(zebedee, session, collection, true);
+        //KeyManager.distributeCollectionKey(zebedee, session, collection, true);
 
         if (release != null) {
-            collection.associateWithRelease(session.email, release, new ZebedeeCollectionWriter(zebedee, collection, session));
+            collection.associateWithRelease("N/A", release, new DecryptedCollectionWriter(collection, "TOKEN"));
             collection.save();
         }
 
@@ -551,7 +551,7 @@ public class Collection {
                 && zebedee.isBeingEdited(uri) > 0;
 
         // Does the user have permission to edit?
-        boolean permission = zebedee.getPermissions().canEdit(email, description);
+        boolean permission = true; //zebedee.getPermissions().canEdit(email, description);
 
         if (source != null && !isBeingEditedElsewhere && permission) {
             // Copy to in progress:
@@ -593,7 +593,7 @@ public class Collection {
 
     public boolean complete(String email, String uri, boolean recursive) throws IOException {
         boolean result = false;
-        boolean permission = zebedee.getPermissions().canEdit(email);
+        boolean permission = true; //zebedee.getPermissions().canEdit(email);
 
         if (isInProgress(uri) && permission) {
             // Move the in-progress copy to completed:

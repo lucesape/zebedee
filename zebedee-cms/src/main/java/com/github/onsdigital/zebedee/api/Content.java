@@ -93,7 +93,7 @@ public class Content {
                     .host(request)
                     .collection(collection)
                     .content(uri)
-                    .user(session.email).log();
+                    .user("email---").log();
         } else {
             Root.zebedee.getCollections().createContent(collection, uri, session, request, requestBody, eventType, validateJson);
             Audit.Event.CONTENT_SAVED
@@ -101,7 +101,7 @@ public class Content {
                     .host(request)
                     .collection(collection)
                     .content(uri)
-                    .user(session.email).log();
+                    .user("email---").log();
         }
 
         return true;

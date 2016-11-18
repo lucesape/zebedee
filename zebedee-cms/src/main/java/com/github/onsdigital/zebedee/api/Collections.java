@@ -60,40 +60,33 @@ public class Collections {
     @GET
     public CollectionDescriptions get(HttpServletRequest request, HttpServletResponse response)
             throws ZebedeeException {
+        CollectionDescriptions result = null;
         try {
-            Session session = Root.zebedee.getSessions().get(request);
-            CollectionDescriptions result = new CollectionDescriptions();
+            //Session session = Root.zebedee.getSessions().get(request);
+            result = new CollectionDescriptions();
             List<Collection> collections = Root.zebedee.getCollections().list();
-            CollectionOwner collectionOwner = zebedeeCmsService.getPublisherType(session.email);
+            //CollectionOwner collectionOwner = zebedeeCmsService.getPublisherType(session.email);
 
             for (Collection collection : collections) {
-                if (Root.zebedee.getPermissions().canView(session, collection.description)
-                        && (collection.description.collectionOwner.equals(collectionOwner))) {
+                //if (Root.zebedee.getPermissions().canView(session, collection.description)
+                //        && (collection.description.collectionOwner.equals(collectionOwner))) {
 
-                    CollectionDescription description = new CollectionDescription();
-                    description.id = collection.description.id;
-                    description.name = collection.description.name;
-                    description.publishDate = collection.description.publishDate;
-                    description.approvalStatus = collection.description.approvalStatus;
-                    description.type = collection.description.type;
-                    description.teams = collection.description.teams;
-                    result.add(description);
-                }
+                CollectionDescription description = new CollectionDescription();
+                description.id = collection.description.id;
+                description.name = collection.description.name;
+                description.publishDate = collection.description.publishDate;
+                description.approvalStatus = collection.description.approvalStatus;
+                description.type = collection.description.type;
+                description.teams = collection.description.teams;
+                result.add(description);
             }
-
-            // sort the collections alphabetically by name.
-            java.util.Collections.sort(result, new Comparator<CollectionDescription>() {
-                @Override
-                public int compare(CollectionDescription o1, CollectionDescription o2) {
-                    return o1.name.compareTo(o2.name);
-                }
-            });
-
-            return result;
-        } catch (IOException e) {
-            logError(e, "Unexpected error while attempting to get collections")
-                    .logAndThrow(UnexpectedErrorException.class);
+        } catch (IOException e1) {
+            e1.printStackTrace();
         }
-        return null;
+
+        // sort the collections alphabetically by name.
+        java.util.Collections.sort(result, (o1, o2) -> o1.name.compareTo(o2.name));
+
+        return result;
     }
 }

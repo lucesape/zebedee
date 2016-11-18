@@ -5,6 +5,7 @@ import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.ContentDetail;
 import com.github.onsdigital.zebedee.json.Session;
 import com.github.onsdigital.zebedee.model.ZebedeeCollectionReader;
+import com.github.onsdigital.zebedee.model.decryption.DecryptedCollectionReader;
 import com.github.onsdigital.zebedee.reader.CollectionReader;
 import com.github.onsdigital.zebedee.util.ContentTree;
 
@@ -35,7 +36,7 @@ public class CollectionBrowseTree {
 
         Session session = Root.zebedee.getSessions().get(request);
 
-        CollectionReader collectionReader = new ZebedeeCollectionReader(Root.zebedee, collection, session);
+        CollectionReader collectionReader = new DecryptedCollectionReader(collection); //ZebedeeCollectionReader(Root.zebedee, collection, session);
         return ContentTree.getOverlayed(collection, collectionReader);
     }
 }

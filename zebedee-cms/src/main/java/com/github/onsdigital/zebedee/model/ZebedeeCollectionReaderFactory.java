@@ -6,6 +6,7 @@ import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.json.Session;
+import com.github.onsdigital.zebedee.model.decryption.DecryptedCollectionReader;
 import com.github.onsdigital.zebedee.reader.CollectionReader;
 import com.github.onsdigital.zebedee.reader.CollectionReaderFactory;
 
@@ -41,6 +42,6 @@ public class ZebedeeCollectionReaderFactory implements CollectionReaderFactory {
     }
 
     CollectionReader getCollectionReader(Collection collection, Session session) throws BadRequestException, IOException, UnauthorizedException, NotFoundException {
-        return new ZebedeeCollectionReader(zebedee, collection, session);
+        return new DecryptedCollectionReader(collection); //new ZebedeeCollectionReader(zebedee, collection, session);
     }
 }

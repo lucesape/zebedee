@@ -47,7 +47,7 @@ public class ContentWriter {
      * @throws IOException
      */
     public void write(InputStream input, String uri) throws IOException, BadRequestException {
-        try (OutputStream output = getOutputStream(uri)) {
+        try (OutputStream output = this.getOutputStream(uri)) {
             org.apache.commons.io.IOUtils.copy(input, output);
         }
     }

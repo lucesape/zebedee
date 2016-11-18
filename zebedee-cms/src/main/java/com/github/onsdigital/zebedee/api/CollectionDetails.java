@@ -8,9 +8,12 @@ import com.github.onsdigital.zebedee.json.Events;
 import com.github.onsdigital.zebedee.json.Session;
 import com.github.onsdigital.zebedee.json.Team;
 import com.github.onsdigital.zebedee.model.ZebedeeCollectionReader;
+import com.github.onsdigital.zebedee.model.decryption.DecryptedCollectionReader;
 import com.github.onsdigital.zebedee.reader.CollectionReader;
+import com.github.onsdigital.zebedee.reader.util.RequestUtils;
 import com.github.onsdigital.zebedee.service.ContentDeleteService;
 import com.github.onsdigital.zebedee.util.ContentDetailUtil;
+import com.github.onsdigital.zebedee.util.permissions.UserToken;
 import org.eclipse.jetty.http.HttpStatus;
 
 import javax.servlet.http.HttpServletRequest;
@@ -39,6 +42,8 @@ public class CollectionDetails {
     public CollectionDetail get(HttpServletRequest request, HttpServletResponse response)
             throws IOException, ZebedeeException {
 
+        UserToken.isValid(RequestUtils.getSessionId(request));
+
         com.github.onsdigital.zebedee.model.Collection collection = Collections
                 .getCollection(request);
 
@@ -47,13 +52,7 @@ public class CollectionDetails {
             return null;
         }
 
-        Session session = Root.zebedee.getSessions().get(request);
-        if (Root.zebedee.getPermissions().canView(session.email, collection.description) == false) {
-            response.setStatus(HttpStatus.UNAUTHORIZED_401);
-            return null;
-        }
-
-        CollectionReader collectionReader = new ZebedeeCollectionReader(Root.zebedee, collection, session);
+        CollectionReader collectionReader = new DecryptedCollectionReader(collection);
 
         CollectionDetail result = new CollectionDetail();
         result.id = collection.description.id;
@@ -77,11 +76,11 @@ public class CollectionDetails {
         addEventsForDetails(result.complete, result, collection);
         addEventsForDetails(result.reviewed, result, collection);
 
-        Set<Integer> teamIds = Root.zebedee.getPermissions().listViewerTeams(collection.description, session);
-        List<Team> teams = Root.zebedee.getTeams().resolveTeams(teamIds);
-        teams.forEach(team -> {
-            collection.description.teams.add(team.name);
-        });
+        //Set<Integer> teamIds = Root.zebedee.getPermissions().listViewerTeams(collection.description, session);
+        //List<Team> teams = Root.zebedee.getTeams().resolveTeams(teamIds);
+        //teams.forEach(team -> {
+            collection.description.teams.add("test");
+        //});
 
         return result;
     }

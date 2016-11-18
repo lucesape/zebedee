@@ -73,7 +73,7 @@ public class CollectionHistoryEvent {
         collectionId(collectionId);
         collectionName(collectionName);
         eventType(collectionEventType);
-        user(session.email);
+        user("email---");
 
         if (metaValues != null) {
             for (CollectionEventMetaData collectionEventMetaData : metaValues) {

@@ -5,6 +5,8 @@ import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.ResultMessage;
 import com.github.onsdigital.zebedee.json.Session;
+import com.github.onsdigital.zebedee.reader.util.RequestUtils;
+import com.github.onsdigital.zebedee.util.permissions.UserToken;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.http.HttpStatus;
@@ -35,6 +37,8 @@ public class Complete {
             ZebedeeException{
 
         // Locate the collection:
+        UserToken.isValid(RequestUtils.getSessionId(request))
+                .isAdminOrPublisher();
         com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
         Session session = Root.zebedee.getSessions().get(request);
         String uri = request.getParameter("uri");
@@ -47,7 +51,7 @@ public class Complete {
                 .parameters()
                 .host(request)
                 .collection(collection)
-                .user(session.email)
+                .user("email----")
                 .log();
 
         return new ResultMessage("URI reviewed.");

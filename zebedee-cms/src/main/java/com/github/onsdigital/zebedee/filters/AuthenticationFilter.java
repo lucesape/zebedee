@@ -14,14 +14,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-public class AuthenticationFilter implements Filter {
+public class AuthenticationFilter {
 
 	/**
 	 * Endpoints that do not require authorisation.
 	 */
 	private static final ImmutableList<Class> NO_AUTH_REQUIRED = new ImmutableList.Builder<Class>()
-			.add(Login.class)
-			.add(Password.class)
 			.add(CsdbKey.class)
 			.add(CsdbNotify.class)
 			.add(ReIndex.class)
@@ -40,7 +38,6 @@ public class AuthenticationFilter implements Filter {
 	 * <li>Otherwise false.</li>
 	 * </ul>
 	 */
-	@Override
 	public boolean filter(HttpServletRequest request, HttpServletResponse response) {
 
 		// Pass through OPTIONS request without authentication for cross-origin preflight requests:
@@ -49,7 +46,6 @@ public class AuthenticationFilter implements Filter {
 		}
 
 		// Pass through without authentication for login requests:
-		// Password requests check
 		Path path = Path.newInstance(request);
 		if (noAuthorisationRequired(path)) {
 			return true;

@@ -20,8 +20,7 @@ import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import java.io.IOException;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by thomasridd on 28/04/15.
@@ -214,7 +213,8 @@ public class Teams {
         if (getTeamName(request) != null) {
             result = Root.zebedee.getTeams().findTeam(getTeamName(request));
         } else {
-            List<Team> teams = Root.zebedee.getTeams().listTeams();
+            Team T = new Team();
+            List<Team> teams = java.util.Collections.singletonList(T);
             teams.sort((o1, o2) -> o1.name.toUpperCase().compareTo(o2.name.toUpperCase()));
             result = new TeamList(teams);
         }

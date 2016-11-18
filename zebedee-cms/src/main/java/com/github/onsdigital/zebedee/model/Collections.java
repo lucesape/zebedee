@@ -10,6 +10,7 @@ import com.github.onsdigital.zebedee.exceptions.*;
 import com.github.onsdigital.zebedee.json.*;
 import com.github.onsdigital.zebedee.model.approval.ApprovalQueue;
 import com.github.onsdigital.zebedee.model.approval.ApproveTask;
+import com.github.onsdigital.zebedee.model.decryption.DecryptedCollectionWriter;
 import com.github.onsdigital.zebedee.model.publishing.PublishNotification;
 import com.github.onsdigital.zebedee.model.publishing.Publisher;
 import com.github.onsdigital.zebedee.persistence.CollectionEventType;
@@ -147,9 +148,9 @@ public class Collections {
         }
 
         // Check authorisation
-        if (!zebedee.getPermissions().canEdit(session)) {
-            throw new UnauthorizedException(getUnauthorizedMessage(session));
-        }
+        //if (!zebedee.getPermissions().canEdit(session)) {
+        //    throw new UnauthorizedException(getUnauthorizedMessage(session));
+        //}
 
         // Locate the path:
         Path path = collection.inProgress.get(uri);
@@ -164,7 +165,7 @@ public class Collections {
 
         CollectionHistoryEvent historyEvent = new CollectionHistoryEvent(collection, session, null, uri);
         // Attempt to complete:
-        if (collection.complete(session.email, uri, recursive)) {
+        if (collection.complete("email----", uri, recursive)) {
             removeEmptyCollectionDirectories(path);
             collection.save();
             getCollectionHistoryDao().saveCollectionHistoryEvent(historyEvent.eventType(COLLECTION_ITEM_COMPLETED));
@@ -496,7 +497,7 @@ public class Collections {
             boolean validateJson
     ) throws IOException, ZebedeeException, FileUploadException {
 
-        CollectionWriter collectionWriter = new ZebedeeCollectionWriter(zebedee, collection, session);
+        CollectionWriter collectionWriter = new DecryptedCollectionWriter(collection, "");
 
         if (collection.description.approvalStatus == ApprovalStatus.COMPLETE) {
             throw new BadRequestException("This collection has been approved and cannot be saved to.");
@@ -518,14 +519,14 @@ public class Collections {
         // Create / edit
         if (path == null) {
             // create the file
-            if (!collection.create(session.email, uri)) {
+            if (!collection.create("email---", uri)) {
                 // file may be being edited in a different collection
                 throw new ConflictException(
                         "It could be this URI is being edited in another collection");
             }
         } else {
             // edit the file
-            boolean result = collection.edit(session.email, uri, collectionWriter, recursive);
+            boolean result = collection.edit("email---", uri, collectionWriter, recursive);
             if (!result) {
                 // file may be being edited in a different collection
                 throw new ConflictException(

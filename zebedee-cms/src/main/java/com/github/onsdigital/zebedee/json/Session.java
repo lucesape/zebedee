@@ -18,7 +18,7 @@ public class Session {
     /**
      * The user this session represents.
      */
-    public String email;
+    public String email = "";
 
     /**
      * The date-time at which the session started. This is useful for general information. Defaults to the current date.
