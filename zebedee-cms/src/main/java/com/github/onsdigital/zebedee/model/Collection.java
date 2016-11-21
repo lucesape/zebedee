@@ -625,9 +625,9 @@ public class Collection {
      * @throws UnauthorizedException if user
      * @throws IOException           If a filesystem error occurs.
      */
-    public boolean review(Session session, String uri, boolean recursive) throws IOException, ZebedeeException {
+    public boolean review(String session, String uri, boolean recursive) throws IOException, ZebedeeException {
         if (session == null) {
-            throw new UnauthorizedException("Insufficient permissions");
+            throw new UnauthorizedException("Insufficient Token");
         }
 
 
@@ -638,10 +638,10 @@ public class Collection {
         }
 
 
-        boolean permission = zebedee.getPermissions().canEdit(session.email);
-        if (!permission) {
-            throw new UnauthorizedException("Insufficient permissions");
-        }
+        boolean permission = true; //zebedee.getPermissions().canEdit(session);
+        //if (!permission) {
+        //    throw new UnauthorizedException("Insufficient Token");
+        //}
 
         if (Files.isDirectory(this.find(uri))) {
             throw new BadRequestException("Cannot complete a directory");
@@ -652,7 +652,7 @@ public class Collection {
             throw new BadRequestException("Item has not been marked completed");
         }
 
-        boolean userCompletedContent = didUserCompleteContent(session.email, uri);
+        boolean userCompletedContent = didUserCompleteContent(session, uri);
         if (userCompletedContent) {
             throw new UnauthorizedException("Reviewer must be a second set of eyes");
         }
@@ -680,9 +680,9 @@ public class Collection {
                 zebedee.getCollections().removeEmptyCollectionDirectories(source);
             }
 
-            addEvent(uri, new Event(new Date(), EventType.REVIEWED, session.email));
+            addEvent(uri, new Event(new Date(), EventType.REVIEWED, session));
             getCollectionHistoryDao().saveCollectionHistoryEvent(
-                    new CollectionHistoryEvent(this.description.id, this.description.name, session,
+                    new CollectionHistoryEvent(this.description.id, this.description.name, new Session(),
                             COLLECTION_CONTENT_REVIEWED, contentReviewed(source, destination)));
             result = true;
         }

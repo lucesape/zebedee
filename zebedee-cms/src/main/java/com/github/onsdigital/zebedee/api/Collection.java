@@ -4,13 +4,12 @@ import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.exceptions.ConflictException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
-import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.CollectionDescription;
 import com.github.onsdigital.zebedee.json.CollectionType;
 import com.github.onsdigital.zebedee.json.Session;
-import com.github.onsdigital.zebedee.reader.util.RequestUtils;
-import com.github.onsdigital.zebedee.util.permissions.UserToken;
+import com.github.onsdigital.zebedee.util.Token.TokenDetails;
+import com.github.onsdigital.zebedee.util.Token.UserToken;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.http.HttpStatus;
 
@@ -21,6 +20,7 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import java.io.IOException;
+import java.util.List;
 
 @Api
 public class Collection {
@@ -39,7 +39,7 @@ public class Collection {
     public CollectionDescription get(HttpServletRequest request, HttpServletResponse response)
             throws IOException, ZebedeeException {
 
-        UserToken.isValid(RequestUtils.getSessionId(request));
+        UserToken.isValid(request);
 
         com.github.onsdigital.zebedee.model.Collection collection = Collections
                 .getCollection(request);
@@ -87,8 +87,7 @@ public class Collection {
                                         HttpServletResponse response,
                                         CollectionDescription collectionDescription) throws IOException, ZebedeeException {
 
-        UserToken.isValid(RequestUtils.getSessionId(request))
-                 .isAdminOrPublisher();
+        UserToken.isValid(request).isAdminOrPublisher();
 
         if (StringUtils.isBlank(collectionDescription.name)) {
             response.setStatus(HttpStatus.BAD_REQUEST_400);
@@ -125,8 +124,7 @@ public class Collection {
             CollectionDescription collectionDescription
     ) throws IOException, ZebedeeException {
 
-        UserToken.isValid(RequestUtils.getSessionId(request))
-                .isPublisher();
+        UserToken.isValid(request).isAdminOrPublisher();
 
         com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
         com.github.onsdigital.zebedee.model.Collection updatedCollection = collection.update(
@@ -164,9 +162,11 @@ public class Collection {
             ZebedeeException {
 
         com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
-        Session session = new Session(); //Root.zebedee.getSessions().get(request);
+        //Session session = new Session(); //Root.zebedee.getSessions().get(request);
+        TokenDetails token = UserToken.isValid(request);
+        token.isAdminOrPublisher();
 
-        Root.zebedee.getCollections().delete(collection, session);
+        Root.zebedee.getCollections().delete(collection, token.getEmail());
 
         Root.cancelPublish(collection);
 
@@ -174,7 +174,7 @@ public class Collection {
                 .parameters()
                 .host(request)
                 .collection(collection)
-                .actionedBy(session.email)
+                .actionedBy(token.getEmail())
                 .log();
 
         return true;

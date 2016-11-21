@@ -119,7 +119,7 @@ public class Equation {
     }
 
     public void deleteFile(HttpServletRequest request, Session session, com.github.onsdigital.zebedee.model.Collection collection, String uriToDelete) throws IOException, ZebedeeException {
-        boolean result = Root.zebedee.getCollections().deleteContent(collection, uriToDelete, session);
+        boolean result = Root.zebedee.getCollections().deleteContent(collection, uriToDelete, session.email);
         if (result) {
             Audit.Event.CONTENT_DELETED
                     .parameters()

@@ -6,7 +6,8 @@ import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.ResultMessage;
 import com.github.onsdigital.zebedee.json.Session;
 import com.github.onsdigital.zebedee.reader.util.RequestUtils;
-import com.github.onsdigital.zebedee.util.permissions.UserToken;
+import com.github.onsdigital.zebedee.util.Token.TokenDetails;
+import com.github.onsdigital.zebedee.util.Token.UserToken;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.http.HttpStatus;
@@ -37,21 +38,21 @@ public class Complete {
             ZebedeeException{
 
         // Locate the collection:
-        UserToken.isValid(RequestUtils.getSessionId(request))
-                .isAdminOrPublisher();
+        TokenDetails token = UserToken.isValid(request);
+        token.isAdminOrPublisher();
         com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
         Session session = Root.zebedee.getSessions().get(request);
         String uri = request.getParameter("uri");
 
         Boolean recursive = BooleanUtils.toBoolean(StringUtils.defaultIfBlank(request.getParameter("recursive"), "false"));
 
-        Root.zebedee.getCollections().complete(collection, uri, session, recursive);
+        Root.zebedee.getCollections().complete(collection, uri, token.getEmail(), recursive);
 
         Audit.Event.COLLECTION_MOVED_TO_REVIEWED
                 .parameters()
                 .host(request)
                 .collection(collection)
-                .user("email----")
+                .user(token.getEmail())
                 .log();
 
         return new ResultMessage("URI reviewed.");

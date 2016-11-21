@@ -37,7 +37,7 @@ import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.*;
 public class ApproveTask implements Callable<Boolean> {
 
     private final Collection collection;
-    private final Session session;
+    private final String email;
     private final CollectionReader collectionReader;
     private final CollectionWriter collectionWriter;
     private final ContentReader publishedReader;
@@ -45,14 +45,14 @@ public class ApproveTask implements Callable<Boolean> {
 
     public ApproveTask(
             Collection collection,
-            Session session,
+            String email,
             CollectionReader collectionReader,
             CollectionWriter collectionWriter,
             ContentReader publishedReader,
             DataIndex dataIndex
     ) {
         this.collection = collection;
-        this.session = session;
+        this.email = email;
         this.collectionReader = collectionReader;
         this.collectionWriter = collectionWriter;
         this.publishedReader = publishedReader;
@@ -174,7 +174,7 @@ public class ApproveTask implements Callable<Boolean> {
     public void approveCollection() throws IOException {
         // set the approved state on the collection
         collection.description.approvalStatus = ApprovalStatus.COMPLETE;
-        collection.description.AddEvent(new Event(new Date(), EventType.APPROVED, session.email));
+        collection.description.AddEvent(new Event(new Date(), EventType.APPROVED, email));
         collection.save();
     }
 
@@ -184,7 +184,8 @@ public class ApproveTask implements Callable<Boolean> {
     }
 
     public void generatePdfFiles(List<ContentDetail> collectionContent) {
-        CollectionPdfGenerator pdfGenerator = new CollectionPdfGenerator(new BabbagePdfService(session, collection));
+        // BabbagePdf needs a look at!
+        CollectionPdfGenerator pdfGenerator = new CollectionPdfGenerator(new BabbagePdfService(new Session(), collection));
         pdfGenerator.generatePdfsInCollection(collectionWriter, collectionContent);
     }
 }

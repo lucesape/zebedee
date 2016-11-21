@@ -9,6 +9,8 @@ import com.github.onsdigital.zebedee.persistence.CollectionEventType;
 import com.github.onsdigital.zebedee.reader.Resource;
 import com.github.onsdigital.zebedee.reader.util.ReaderResponseResponseUtils;
 import com.github.onsdigital.zebedee.reader.util.RequestUtils;
+import com.github.onsdigital.zebedee.util.Token.TokenDetails;
+import com.github.onsdigital.zebedee.util.Token.UserToken;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -123,19 +125,21 @@ public class Content {
     public boolean delete(HttpServletRequest request, HttpServletResponse response) throws IOException,
             ZebedeeException {
 
-        Session session = Root.zebedee.getSessions().get(request);
+        //Session session = Root.zebedee.getSessions().get(request);
+        TokenDetails token = UserToken.isValid(request);
+        token.isAdminOrPublisher();
 
         Collection collection = Collections.getCollection(request);
         String uri = request.getParameter("uri");
 
-        boolean result = Root.zebedee.getCollections().deleteContent(collection, uri, session);
+        boolean result = Root.zebedee.getCollections().deleteContent(collection, uri, token.getEmail());
         if (result) {
             Audit.Event.CONTENT_DELETED
                     .parameters()
                     .host(request)
                     .collection(collection)
                     .content(uri)
-                    .user(session.email).log();
+                    .user(token.getEmail()).log();
         }
 
         return result;

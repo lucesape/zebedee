@@ -10,6 +10,7 @@ import com.github.onsdigital.zebedee.exceptions.*;
 import com.github.onsdigital.zebedee.json.*;
 import com.github.onsdigital.zebedee.model.approval.ApprovalQueue;
 import com.github.onsdigital.zebedee.model.approval.ApproveTask;
+import com.github.onsdigital.zebedee.model.decryption.DecryptedCollectionReader;
 import com.github.onsdigital.zebedee.model.decryption.DecryptedCollectionWriter;
 import com.github.onsdigital.zebedee.model.publishing.PublishNotification;
 import com.github.onsdigital.zebedee.model.publishing.Publisher;
@@ -129,7 +130,7 @@ public class Collections {
      *
      * @param collection
      * @param uri
-     * @param session
+     * @param email
      * @param recursive
      * @throws IOException
      * @throws NotFoundException
@@ -138,7 +139,7 @@ public class Collections {
      */
     public void complete(
             Collection collection, String uri,
-            Session session,
+            String email,
             boolean recursive
     ) throws IOException, ZebedeeException {
 
@@ -163,9 +164,9 @@ public class Collections {
             throw new BadRequestException("URI does not represent a file.");
         }
 
-        CollectionHistoryEvent historyEvent = new CollectionHistoryEvent(collection, session, null, uri);
+        CollectionHistoryEvent historyEvent = new CollectionHistoryEvent(collection,  new Session(), null, uri);
         // Attempt to complete:
-        if (collection.complete("email----", uri, recursive)) {
+        if (collection.complete(email, uri, recursive)) {
             removeEmptyCollectionDirectories(path);
             collection.save();
             getCollectionHistoryDao().saveCollectionHistoryEvent(historyEvent.eventType(COLLECTION_ITEM_COMPLETED));
@@ -227,14 +228,14 @@ public class Collections {
      * Uses the environment variable use_beta_publisher to choose publisher
      *
      * @param collection
-     * @param session
+     * @param email
      * @return
      * @throws IOException
      * @throws UnauthorizedException
      * @throws BadRequestException
      * @throws ConflictException
      */
-    public Future<Boolean> approve(Collection collection, Session session)
+    public Future<Boolean> approve(Collection collection, String email)
             throws IOException, ZebedeeException {
 
         // Collection exists
@@ -243,9 +244,9 @@ public class Collections {
         }
 
         // User has permission
-        if (session == null || !zebedee.getPermissions().canEdit(session.email)) {
-            throw new UnauthorizedException(getUnauthorizedMessage(session));
-        }
+        //if (email == null || !zebedee.getPermissions().canEdit(email)) {
+        //    throw new UnauthorizedException(getUnauthorizedMessage(email));
+        //}
 
         // Everything is completed
         if (!collection.inProgressUris().isEmpty()
@@ -254,8 +255,8 @@ public class Collections {
                     "This collection can't be approved because it's not empty");
         }
 
-        CollectionReader collectionReader = new ZebedeeCollectionReader(zebedee, collection, session);
-        CollectionWriter collectionWriter = new ZebedeeCollectionWriter(zebedee, collection, session);
+        CollectionReader collectionReader = new DecryptedCollectionReader(collection);  //ZebedeeCollectionReader(zebedee, collection, email);
+        CollectionWriter collectionWriter = new DecryptedCollectionWriter(collection, ""); //ZebedeeCollectionWriter(zebedee, collection, email);
 
         ContentReader publishedReader = new FileSystemContentReader(zebedee.getPublished().path);
         DataIndex dataIndex = zebedee.getDataIndex();
@@ -264,9 +265,9 @@ public class Collections {
         collection.save();
 
         Future<Boolean> future = ApprovalQueue.add(
-                new ApproveTask(collection, session, collectionReader, collectionWriter, publishedReader, dataIndex));
+                new ApproveTask(collection, email, collectionReader, collectionWriter, publishedReader, dataIndex));
 
-        getCollectionHistoryDao().saveCollectionHistoryEvent(collection, session, COLLECTION_APPROVED);
+        getCollectionHistoryDao().saveCollectionHistoryEvent(collection, new Session(), COLLECTION_APPROVED);
         return future;
     }
 
@@ -281,7 +282,7 @@ public class Collections {
      * @throws BadRequestException
      * @throws ConflictException
      */
-    public boolean unlock(Collection collection, Session session)
+    public boolean unlock(Collection collection, String email)
             throws IOException, ZebedeeException {
 
         // Collection exists
@@ -290,9 +291,9 @@ public class Collections {
         }
 
         // User has permission
-        if (session == null || !zebedee.getPermissions().canEdit(session.email)) {
-            throw new UnauthorizedException(getUnauthorizedMessage(session));
-        }
+        //if (session == null || !zebedee.getPermissions().canEdit(session.email)) {
+        //    throw new UnauthorizedException(getUnauthorizedMessage(session));
+        //}
 
         // don't do anything if the approval status is not complete.
         if (collection.description.approvalStatus != ApprovalStatus.COMPLETE) {
@@ -301,8 +302,8 @@ public class Collections {
 
         // Go ahead
         collection.description.approvalStatus = ApprovalStatus.NOT_STARTED;
-        collection.description.AddEvent(new Event(new Date(), EventType.UNLOCKED, session.email));
-        getCollectionHistoryDao().saveCollectionHistoryEvent(collection, session, COLLECTION_UNLOCKED);
+        collection.description.AddEvent(new Event(new Date(), EventType.UNLOCKED, email));
+        getCollectionHistoryDao().saveCollectionHistoryEvent(collection, new Session(), COLLECTION_UNLOCKED);
 
         boolean result = collection.save();
         new PublishNotification(collection).sendNotification(EventType.UNLOCKED);
@@ -313,7 +314,7 @@ public class Collections {
      * Publish the files
      *
      * @param collection       the collection to publish
-     * @param session          a session with editor priviledges
+     * @param email          a session with editor priviledges
      * @param skipVerification
      * @return success
      * @throws IOException
@@ -321,7 +322,7 @@ public class Collections {
      * @throws BadRequestException
      * @throws ConflictException     - If there
      */
-    public boolean publish(Collection collection, Session session, boolean breakBeforePublish, boolean skipVerification)
+    public boolean publish(Collection collection, String email, boolean breakBeforePublish, boolean skipVerification)
             throws IOException, UnauthorizedException, BadRequestException,
             ConflictException, NotFoundException {
 
@@ -331,9 +332,9 @@ public class Collections {
         }
 
         // User has permission
-        if (session == null || !zebedee.getPermissions().canEdit(session.email)) {
-            throw new UnauthorizedException(getUnauthorizedMessage(session));
-        }
+        //if (session == null || !zebedee.getPermissions().canEdit(session.email)) {
+        //    throw new UnauthorizedException(getUnauthorizedMessage(session));
+        //}
 
         // Check approval status
         if (collection.description.approvalStatus != ApprovalStatus.COMPLETE) {
@@ -347,12 +348,12 @@ public class Collections {
         }
         logInfo("Going ahead with publish").log();
 
-        Keyring keyring = zebedee.getKeyringCache().get(session);
-        if (keyring == null) throw new UnauthorizedException("No keyring is available for " + session.email);
+        //Keyring keyring = zebedee.getKeyringCache().get(session);
+        //if (keyring == null) throw new UnauthorizedException("No keyring is available for " + session.email);
 
-        ZebedeeCollectionReader collectionReader = new ZebedeeCollectionReader(zebedee, collection, session);
+        CollectionReader collectionReader = new DecryptedCollectionReader(collection); //(zebedee, collection, session);
         long publishStart = System.currentTimeMillis();
-        boolean publishComplete = Publisher.Publish(collection, session.email, collectionReader);
+        boolean publishComplete = Publisher.Publish(collection, email, collectionReader);
 
         if (publishComplete) {
             long onPublishCompleteStart = System.currentTimeMillis();
@@ -384,7 +385,7 @@ public class Collections {
             throw new BadRequestException("Please specify a valid collection.");
         }
 
-        // Check view permissions
+        // Check view Token
         if (!zebedee.getPermissions().canView(session,
                 collection.description)) {
             throw new UnauthorizedException(getUnauthorizedMessage(session));
@@ -410,7 +411,7 @@ public class Collections {
      *
      * @param collection the collection to overlay on master content
      * @param uri        the uri of the directory
-     * @param session    the session (used to determine user permissions)
+     * @param session    the session (used to determine user Token)
      * @return a DirectoryListing object with system content overlaying master content
      * @throws NotFoundException
      * @throws UnauthorizedException
@@ -434,7 +435,7 @@ public class Collections {
         return listing;
     }
 
-    public void delete(Collection collection, Session session)
+    public void delete(Collection collection, String email)
             throws IOException, ZebedeeException {
 
         // Collection exists
@@ -443,9 +444,9 @@ public class Collections {
         }
 
         // User has permission
-        if (!zebedee.getPermissions().canEdit(session)) {
-            throw new UnauthorizedException(getUnauthorizedMessage(session));
-        }
+        //if (!zebedee.getPermissions().canEdit(session)) {
+        //    throw new UnauthorizedException(getUnauthorizedMessage(session));
+        //}
 
         // Collection is empty
         if (!collection.isEmpty()) {
@@ -454,7 +455,7 @@ public class Collections {
 
         // Go ahead
         collection.delete();
-        getCollectionHistoryDao().saveCollectionHistoryEvent(collection, session, COLLECTION_DELETED);
+        getCollectionHistoryDao().saveCollectionHistoryEvent(collection, new Session(), COLLECTION_DELETED);
     }
 
     /**
@@ -584,7 +585,7 @@ public class Collections {
 
     public boolean deleteContent(
             Collection collection, String uri,
-            Session session
+            String email
     ) throws IOException, ZebedeeException {
 
         // Collection (null check before authorisation check)
@@ -593,9 +594,11 @@ public class Collections {
         }
 
         // Authorisation
-        if (session == null || !zebedee.getPermissions().canEdit(session.email)) {
-            throw new UnauthorizedException(getUnauthorizedMessage(session));
-        }
+        //if (session == null || !zebedee.getPermissions().canEdit(session.email)) {
+        //    throw new UnauthorizedException(getUnauthorizedMessage(session));
+        //}
+        Session session = new Session();
+        session.email = email;
 
         // Requested path
         if (StringUtils.isBlank(uri)) {
@@ -620,7 +623,7 @@ public class Collections {
             eventType = DATA_VISUALISATION_COLLECTION_CONTENT_DELETED;
         } else {
             if (Files.isDirectory(path)) {
-                deleted = collection.deleteContentDirectory(session.email, uri);
+                deleted = collection.deleteContentDirectory(email, uri);
             } else {
                 deleted = collection.deleteFile(uri);
             }

@@ -2,20 +2,17 @@ package com.github.onsdigital.zebedee.api;
 
 import com.github.davidcarboni.restolino.framework.Api;
 import com.github.davidcarboni.restolino.helpers.Path;
-import com.github.onsdigital.zebedee.model.CollectionOwner;
-import com.github.onsdigital.zebedee.exceptions.UnexpectedErrorException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.CollectionDescription;
 import com.github.onsdigital.zebedee.json.CollectionDescriptions;
-import com.github.onsdigital.zebedee.json.Session;
 import com.github.onsdigital.zebedee.model.Collection;
 import com.github.onsdigital.zebedee.util.ZebedeeCmsService;
+import com.github.onsdigital.zebedee.util.Token.UserToken;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.GET;
 import java.io.IOException;
-import java.util.Comparator;
 import java.util.List;
 
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logError;
@@ -62,6 +59,7 @@ public class Collections {
             throws ZebedeeException {
         CollectionDescriptions result = null;
         try {
+            UserToken.isValid(request).isViewer();
             //Session session = Root.zebedee.getSessions().get(request);
             result = new CollectionDescriptions();
             List<Collection> collections = Root.zebedee.getCollections().list();

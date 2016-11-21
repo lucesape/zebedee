@@ -7,6 +7,8 @@ import com.github.onsdigital.zebedee.exceptions.ConflictException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.Session;
+import com.github.onsdigital.zebedee.util.Token.TokenDetails;
+import com.github.onsdigital.zebedee.util.Token.UserToken;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -32,14 +34,16 @@ public class Unlock {
             ZebedeeException {
 
         com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
-        Session session = Root.zebedee.getSessions().get(request);
-        boolean result = Root.zebedee.getCollections().unlock(collection, session);
+        //Session session = Root.zebedee.getSessions().get(request);
+        TokenDetails token = UserToken.isValid(request);
+        token.isAdminOrPublisher();
+        boolean result = Root.zebedee.getCollections().unlock(collection, token.getEmail());
         if (result) {
             Audit.Event.COLLECTION_UNLOCKED
                     .parameters()
                     .host(request)
                     .collection(collection)
-                    .actionedBy(session.email)
+                    .actionedBy(token.getEmail())
                     .log();
         }
 

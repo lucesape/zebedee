@@ -4,6 +4,8 @@ import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.Session;
+import com.github.onsdigital.zebedee.util.Token.TokenDetails;
+import com.github.onsdigital.zebedee.util.Token.UserToken;
 import org.eclipse.jetty.http.HttpStatus;
 
 import javax.servlet.http.HttpServletRequest;
@@ -35,15 +37,16 @@ public class Approve {
     public boolean approveCollection(HttpServletRequest request, HttpServletResponse response) throws IOException, ZebedeeException {
 
         com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
-        Session session = Root.zebedee.getSessions().get(request);
-
-        Root.zebedee.getCollections().approve(collection, session);
+        //Session session = Root.zebedee.getSessions().get(request);
+        TokenDetails token = UserToken.isValid(request);
+        token.isAdminOrPublisher();
+        Root.zebedee.getCollections().approve(collection, token.getEmail());
 
         Audit.Event.COLLECTION_APPROVED
                 .parameters()
                 .host(request)
                 .collection(collection)
-                .actionedBy(session.email)
+                .actionedBy(token.getEmail())
                 .log();
 
         return true;

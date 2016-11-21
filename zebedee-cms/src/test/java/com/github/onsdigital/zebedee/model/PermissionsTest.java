@@ -127,7 +127,7 @@ public class PermissionsTest {
     public void shouldAddAdministrator() throws IOException, UnauthorizedException, NotFoundException, BadRequestException {
 
         // Given
-        // A session for an administrator and a user without any permissions
+        // A session for an administrator and a user without any Token
         String email = builder.reviewer1.email;
         Session session = zebedee.openSession(builder.administratorCredentials);
 
@@ -144,7 +144,7 @@ public class PermissionsTest {
     public void shouldNotAddAdministratorIfPublisher() throws IOException, UnauthorizedException, NotFoundException, BadRequestException {
 
         // Given
-        // A session for an administrator and a user without any permissions
+        // A session for an administrator and a user without any Token
         String email = builder.reviewer1.email;
         Session session = zebedee.openSession(builder.publisher1Credentials);
 
@@ -328,7 +328,7 @@ public class PermissionsTest {
         String email = builder.publisher1.email.toUpperCase();
 
         // When
-        // We check the user's permissions
+        // We check the user's Token
         boolean adminPermission = zebedee.getPermissions().isAdministrator(email);
         boolean editPermission = zebedee.getPermissions().canEdit(email);
         boolean viewPermission = zebedee.getPermissions().canView(email, labourMarketCollection.description);
@@ -350,7 +350,7 @@ public class PermissionsTest {
         credentials.email = credentials.email.toUpperCase();
         Session session = zebedee.openSession(credentials);
 
-        // When we attempt to get user permissions for that data vis publisher.
+        // When we attempt to get user Token for that data vis publisher.
         PermissionDefinition permissionDefinition = zebedee.getPermissions().userPermissions(email, session);
 
         // Then no exception is thrown.
