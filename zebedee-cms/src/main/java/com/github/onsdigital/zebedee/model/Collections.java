@@ -11,7 +11,7 @@ import com.github.onsdigital.zebedee.json.*;
 import com.github.onsdigital.zebedee.model.approval.ApprovalQueue;
 import com.github.onsdigital.zebedee.model.approval.ApproveTask;
 import com.github.onsdigital.zebedee.model.decryption.DecryptedCollectionReader;
-import com.github.onsdigital.zebedee.model.decryption.DecryptedCollectionWriter;
+import com.github.onsdigital.zebedee.model.decryption.EncryptedCollectionWriter;
 import com.github.onsdigital.zebedee.model.publishing.PublishNotification;
 import com.github.onsdigital.zebedee.model.publishing.Publisher;
 import com.github.onsdigital.zebedee.persistence.CollectionEventType;
@@ -256,7 +256,7 @@ public class Collections {
         }
 
         CollectionReader collectionReader = new DecryptedCollectionReader(collection);  //ZebedeeCollectionReader(zebedee, collection, email);
-        CollectionWriter collectionWriter = new DecryptedCollectionWriter(collection, ""); //ZebedeeCollectionWriter(zebedee, collection, email);
+        CollectionWriter collectionWriter = new EncryptedCollectionWriter(collection, ""); //ZebedeeCollectionWriter(zebedee, collection, email);
 
         ContentReader publishedReader = new FileSystemContentReader(zebedee.getPublished().path);
         DataIndex dataIndex = zebedee.getDataIndex();
@@ -385,7 +385,7 @@ public class Collections {
             throw new BadRequestException("Please specify a valid collection.");
         }
 
-        // Check view Token
+        // Check view token
         if (!zebedee.getPermissions().canView(session,
                 collection.description)) {
             throw new UnauthorizedException(getUnauthorizedMessage(session));
@@ -411,7 +411,7 @@ public class Collections {
      *
      * @param collection the collection to overlay on master content
      * @param uri        the uri of the directory
-     * @param session    the session (used to determine user Token)
+     * @param session    the session (used to determine user token)
      * @return a DirectoryListing object with system content overlaying master content
      * @throws NotFoundException
      * @throws UnauthorizedException
@@ -498,7 +498,7 @@ public class Collections {
             boolean validateJson
     ) throws IOException, ZebedeeException, FileUploadException {
 
-        CollectionWriter collectionWriter = new DecryptedCollectionWriter(collection, "");
+        CollectionWriter collectionWriter = new EncryptedCollectionWriter(collection, "");
 
         if (collection.description.approvalStatus == ApprovalStatus.COMPLETE) {
             throw new BadRequestException("This collection has been approved and cannot be saved to.");

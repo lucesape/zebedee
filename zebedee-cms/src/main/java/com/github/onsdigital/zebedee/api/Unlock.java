@@ -2,13 +2,11 @@ package com.github.onsdigital.zebedee.api;
 
 import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
-import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.ConflictException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
-import com.github.onsdigital.zebedee.json.Session;
-import com.github.onsdigital.zebedee.util.Token.TokenDetails;
-import com.github.onsdigital.zebedee.util.Token.UserToken;
+import com.github.onsdigital.zebedee.util.token.TokenDetails;
+import com.github.onsdigital.zebedee.util.token.UserToken;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;

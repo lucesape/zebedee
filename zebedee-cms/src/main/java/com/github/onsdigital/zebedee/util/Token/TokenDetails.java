@@ -1,4 +1,4 @@
-package com.github.onsdigital.zebedee.util.Token;
+package com.github.onsdigital.zebedee.util.token;
 
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.mashape.unirest.http.JsonNode;

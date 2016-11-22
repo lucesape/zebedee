@@ -9,8 +9,8 @@ import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.Session;
 import com.github.onsdigital.zebedee.persistence.model.CollectionHistoryEvent;
-import com.github.onsdigital.zebedee.util.Token.TokenDetails;
-import com.github.onsdigital.zebedee.util.Token.UserToken;
+import com.github.onsdigital.zebedee.util.token.TokenDetails;
+import com.github.onsdigital.zebedee.util.token.UserToken;
 import org.apache.commons.lang3.BooleanUtils;
 import org.eclipse.jetty.http.HttpStatus;
 

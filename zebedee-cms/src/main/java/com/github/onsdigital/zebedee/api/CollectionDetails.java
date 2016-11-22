@@ -10,7 +10,7 @@ import com.github.onsdigital.zebedee.reader.CollectionReader;
 import com.github.onsdigital.zebedee.reader.util.RequestUtils;
 import com.github.onsdigital.zebedee.service.ContentDeleteService;
 import com.github.onsdigital.zebedee.util.ContentDetailUtil;
-import com.github.onsdigital.zebedee.util.Token.UserToken;
+import com.github.onsdigital.zebedee.util.token.UserToken;
 import org.eclipse.jetty.http.HttpStatus;
 
 import javax.servlet.http.HttpServletRequest;
@@ -27,7 +27,7 @@ public class CollectionDetails {
     /**
      * Retrieves a CollectionDetail object at the endpoint /CollectionDetails/[CollectionName]
      *
-     * @param request  This should contain a X-Florence-Token header for the current session
+     * @param request  This should contain a X-Florence-token header for the current session
      * @param response <ul>
      *                 <li>If no collection exists:  {@link HttpStatus#NOT_FOUND_404}</li>
      *                 </ul>

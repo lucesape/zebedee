@@ -10,7 +10,7 @@ import com.github.onsdigital.zebedee.json.*;
 import com.github.onsdigital.zebedee.model.approval.tasks.ReleasePopulator;
 import com.github.onsdigital.zebedee.model.content.item.ContentItemVersion;
 import com.github.onsdigital.zebedee.model.content.item.VersionedContentItem;
-import com.github.onsdigital.zebedee.model.decryption.DecryptedCollectionWriter;
+import com.github.onsdigital.zebedee.model.decryption.EncryptedCollectionWriter;
 import com.github.onsdigital.zebedee.model.publishing.scheduled.Scheduler;
 import com.github.onsdigital.zebedee.persistence.model.CollectionHistoryEvent;
 import com.github.onsdigital.zebedee.reader.CollectionReader;
@@ -148,7 +148,7 @@ public class Collection {
         //KeyManager.distributeCollectionKey(zebedee, session, collection, true);
 
         if (release != null) {
-            collection.associateWithRelease("N/A", release, new DecryptedCollectionWriter(collection, "TOKEN"));
+            collection.associateWithRelease("N/A", release, new EncryptedCollectionWriter(collection, "TOKEN"));
             collection.save();
         }
 
@@ -627,7 +627,7 @@ public class Collection {
      */
     public boolean review(String session, String uri, boolean recursive) throws IOException, ZebedeeException {
         if (session == null) {
-            throw new UnauthorizedException("Insufficient Token");
+            throw new UnauthorizedException("Insufficient token");
         }
 
 
@@ -640,7 +640,7 @@ public class Collection {
 
         boolean permission = true; //zebedee.getPermissions().canEdit(session);
         //if (!permission) {
-        //    throw new UnauthorizedException("Insufficient Token");
+        //    throw new UnauthorizedException("Insufficient token");
         //}
 
         if (Files.isDirectory(this.find(uri))) {

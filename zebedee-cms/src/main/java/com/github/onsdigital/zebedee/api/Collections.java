@@ -7,7 +7,7 @@ import com.github.onsdigital.zebedee.json.CollectionDescription;
 import com.github.onsdigital.zebedee.json.CollectionDescriptions;
 import com.github.onsdigital.zebedee.model.Collection;
 import com.github.onsdigital.zebedee.util.ZebedeeCmsService;
-import com.github.onsdigital.zebedee.util.Token.UserToken;
+import com.github.onsdigital.zebedee.util.token.UserToken;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;

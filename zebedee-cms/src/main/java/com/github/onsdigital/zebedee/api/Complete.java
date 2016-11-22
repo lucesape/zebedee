@@ -5,9 +5,8 @@ import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.ResultMessage;
 import com.github.onsdigital.zebedee.json.Session;
-import com.github.onsdigital.zebedee.reader.util.RequestUtils;
-import com.github.onsdigital.zebedee.util.Token.TokenDetails;
-import com.github.onsdigital.zebedee.util.Token.UserToken;
+import com.github.onsdigital.zebedee.util.token.TokenDetails;
+import com.github.onsdigital.zebedee.util.token.UserToken;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.http.HttpStatus;
@@ -24,7 +23,7 @@ public class Complete {
      * Creates or updates collection details the endpoint <code>/Complete/[CollectionName]/?uri=[uri]</code>
      * <p>Marks a content item complete</p>
      *
-     * @param request  This should contain a X-Florence-Token header for the current session
+     * @param request  This should contain a X-Florence-token header for the current session
      * @param response <ul>
      *                 <li>If collection does not exist:  {@link HttpStatus#NOT_FOUND_404}</li>
      *                 <li>If uri is not currently inProgress:  {@link HttpStatus#NOT_FOUND_404}</li>

@@ -8,8 +8,8 @@ import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.CollectionDescription;
 import com.github.onsdigital.zebedee.json.CollectionType;
 import com.github.onsdigital.zebedee.json.Session;
-import com.github.onsdigital.zebedee.util.Token.TokenDetails;
-import com.github.onsdigital.zebedee.util.Token.UserToken;
+import com.github.onsdigital.zebedee.util.token.TokenDetails;
+import com.github.onsdigital.zebedee.util.token.UserToken;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.http.HttpStatus;
 
@@ -20,7 +20,6 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import java.io.IOException;
-import java.util.List;
 
 @Api
 public class Collection {
@@ -28,7 +27,7 @@ public class Collection {
     /**
      * Retrieves a CollectionDescription object at the endpoint /Collection/[CollectionName]
      *
-     * @param request  This should contain a X-Florence-Token header for the current session
+     * @param request  This should contain a X-Florence-token header for the current session
      * @param response <ul>
      *                 <li>If no collection exists:  {@link HttpStatus#NOT_FOUND_404}</li>
      *                 </ul>
@@ -72,7 +71,7 @@ public class Collection {
      * <p>
      * Checks if a collection exists using {@link CollectionDescription#name}
      *
-     * @param request               This should contain a X-Florence-Token header for the current session
+     * @param request               This should contain a X-Florence-token header for the current session
      * @param response              <ul>
      *                              <li>If no name has been passed:  {@link HttpStatus#BAD_REQUEST_400}</li>
      *                              <li>If user cannot create collections:  {@link HttpStatus#UNAUTHORIZED_401}</li>
@@ -148,7 +147,7 @@ public class Collection {
     /**
      * Deletes the collection details at the endpoint /Collection/[CollectionName]
      *
-     * @param request  This should contain a X-Florence-Token header for the current session
+     * @param request  This should contain a X-Florence-token header for the current session
      * @param response <ul>
      *                 <li>If the collection doesn't exist:  {@link HttpStatus#BAD_REQUEST_400}</li>
      *                 <li>If user is not authorised to delete this collection:  {@link HttpStatus#UNAUTHORIZED_401}</li>

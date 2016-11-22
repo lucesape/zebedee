@@ -9,8 +9,8 @@ import com.github.onsdigital.zebedee.persistence.CollectionEventType;
 import com.github.onsdigital.zebedee.reader.Resource;
 import com.github.onsdigital.zebedee.reader.util.ReaderResponseResponseUtils;
 import com.github.onsdigital.zebedee.reader.util.RequestUtils;
-import com.github.onsdigital.zebedee.util.Token.TokenDetails;
-import com.github.onsdigital.zebedee.util.Token.UserToken;
+import com.github.onsdigital.zebedee.util.token.TokenDetails;
+import com.github.onsdigital.zebedee.util.token.UserToken;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -38,7 +38,7 @@ public class Content {
      * <p/>
      * <p>This may be working content from the collection. Defaults to current website content</p>
      *
-     * @param request  This should contain a X-Florence-Token header for the current session
+     * @param request  This should contain a X-Florence-token header for the current session
      * @param response No respons message.
      * @return
      * @throws IOException           If an error occurs in processing data, typically to the filesystem, but also on the HTTP connection.
@@ -57,7 +57,7 @@ public class Content {
     /**
      * Posts file content to the endpoint <code>/Content/[CollectionName]/?uri=[uri]</code>
      *
-     * @param request  This should contain a X-Florence-Token header for the current session
+     * @param request  This should contain a X-Florence-token header for the current session
      *                 <ul>Body should contain
      *                 <li>Page content - JSON Serialized content</li>
      *                 <li>File Upload - A multipart content object with part "file" as binary data </li>
@@ -112,7 +112,7 @@ public class Content {
     /**
      * Deletes file content from the endpoint <code>/Content/[CollectionName]/?uri=[uri]</code>
      *
-     * @param request  This should contain a X-Florence-Token header for the current session
+     * @param request  This should contain a X-Florence-token header for the current session
      * @param response Returns true or false according to whether the URI was deleted.
      * @return
      * @throws IOException           If an error occurs in processing data, typically to the filesystem, but also on the HTTP connection.

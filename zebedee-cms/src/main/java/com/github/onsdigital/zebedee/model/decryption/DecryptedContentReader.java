@@ -2,6 +2,9 @@ package com.github.onsdigital.zebedee.model.decryption;
 
 import com.github.onsdigital.zebedee.reader.FileSystemContentReader;
 import com.github.onsdigital.zebedee.reader.Resource;
+import com.github.onsdigital.zebedee.util.encryption.EncryptionApi;
+import com.mashape.unirest.http.exceptions.UnirestException;
+import org.apache.commons.io.IOUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -10,8 +13,11 @@ import java.nio.file.Path;
 
 public class DecryptedContentReader extends FileSystemContentReader {
 
+    private String token;
+
     public DecryptedContentReader(Path rootPath) {
         super(rootPath);
+        token = EncryptionApi.ROOT_TOKEN;
     }
 
     @Override
@@ -25,7 +31,7 @@ public class DecryptedContentReader extends FileSystemContentReader {
         resource.setName(path.getFileName().toString());
         resource.setMimeType(determineMimeType(path));
         resource.setUri(toRelativeUri(path));
-        resource.setData(getInputStream(path));
+        resource.setData(decryptData(getInputStream(path)));
         return resource;
     }
 
@@ -34,5 +40,22 @@ public class DecryptedContentReader extends FileSystemContentReader {
         inputStream = Files.newInputStream(path);
 
         return inputStream;
+    }
+
+    private InputStream decryptData(InputStream encrypted) throws IOException {
+        String data = IOUtils.toString(encrypted);
+        // Check for vault encryption
+        if (data.contains("vault:")) {
+            String decrypted = null;
+            try {
+                decrypted = EncryptionApi.decrypt(data, token);
+            } catch (UnirestException e) {
+                e.printStackTrace();
+            }
+            encrypted.close();
+            return IOUtils.toInputStream(decrypted);
+        }
+
+        return encrypted;
     }
 }

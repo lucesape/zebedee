@@ -2,14 +2,11 @@ package com.github.onsdigital.zebedee.api;
 
 import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
-import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
-import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.ResultMessage;
-import com.github.onsdigital.zebedee.json.Session;
-import com.github.onsdigital.zebedee.util.Token.TokenDetails;
-import com.github.onsdigital.zebedee.util.Token.UserToken;
+import com.github.onsdigital.zebedee.util.token.TokenDetails;
+import com.github.onsdigital.zebedee.util.token.UserToken;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.http.HttpStatus;
@@ -25,7 +22,7 @@ public class Review {
     /**
      * Moves files between collections using the endpoint <code>/Review/[CollectionName]?uri=[uri]</code>
      *
-     * @param request This should contain a X-Florence-Token header for the current session
+     * @param request This should contain a X-Florence-token header for the current session
      * @param response <ul>
      *                 <li>If the collection does not exist:  {@link HttpStatus#NOT_FOUND_404}</li>
      *                 <li>If the content item does not exist:  {@link HttpStatus#NOT_FOUND_404}</li>
