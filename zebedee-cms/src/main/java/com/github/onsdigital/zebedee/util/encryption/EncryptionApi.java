@@ -14,10 +14,19 @@ public class EncryptionApi {
 
     private static final String ENCRYPT_URI_AI = "http://localhost:8100";
 
+    public static void createKey(final String collectionId, final String token) throws UnirestException {
+        final String message = "{\"collectionId\":\"" + collectionId + "\"}";
 
-    public static String encrypt(final String data, String token) throws UnirestException {
+        Unirest.post(ENCRYPT_URI_AI + "/key")
+                .header("Content-Type", "application/json")
+                .header("Cookie", "access_token=" + token + ";")
+                .body(message)
+                .asJson();
+    }
 
-        String message = "{\"id\":\"1234\",\"data\": \"" + encodeBase64(data) + "\"}";
+    public static String encrypt(final String id, final String data, String token) throws UnirestException {
+
+        String message = "{\"id\":\""+ id +"\",\"data\": \"" + encodeBase64(data) + "\"}";
 
         HttpResponse<JsonNode> response = Unirest.post(ENCRYPT_URI_AI + "/encrypt")
                 .header("Content-Type", "application/json")
@@ -32,9 +41,9 @@ public class EncryptionApi {
 
     }
 
-    public static String decrypt(final String data, String token) throws UnirestException {
+    public static String decrypt(final String id,final String data, String token) throws UnirestException {
 
-        String message = "{\"id\":\"1234\",\"data\": \"" + data + "\"}";
+        String message = "{\"id\":\""+ id +"\",\"data\": \"" + data + "\"}";
 
         HttpResponse<JsonNode> response = Unirest.post(ENCRYPT_URI_AI + "/decrypt")
                 .header("Content-Type", "application/json")

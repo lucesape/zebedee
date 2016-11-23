@@ -3,6 +3,7 @@ package com.github.onsdigital.zebedee.model.decryption;
 
 import com.github.onsdigital.zebedee.content.util.ContentUtil;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
+import com.github.onsdigital.zebedee.model.Collection;
 import com.github.onsdigital.zebedee.model.ContentWriter;
 import com.github.onsdigital.zebedee.util.SlackNotification;
 import com.github.onsdigital.zebedee.util.encryption.EncryptionApi;
@@ -21,10 +22,12 @@ import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logInfo;
 public class EncryptedContentWriter extends ContentWriter {
 
     private String token;
+    private Collection collection;
 
-    public EncryptedContentWriter(Path rootFolder, String token) {
+    public EncryptedContentWriter(Path rootFolder, Collection collection, String token) {
         super(rootFolder);
         this.token = EncryptionApi.ROOT_TOKEN;
+        this.collection = collection;
     }
 
     @Override
@@ -32,7 +35,8 @@ public class EncryptedContentWriter extends ContentWriter {
         String contentToEncrypt = ContentUtil.serialise(object);
         String encrypted = null;
         try {
-            encrypted = EncryptionApi.encrypt(contentToEncrypt, token);
+            encrypted = EncryptionApi.encrypt(collection.getDescription().id,
+                    contentToEncrypt, token);
         } catch (UnirestException e) {
             e.printStackTrace();
         }
@@ -47,13 +51,13 @@ public class EncryptedContentWriter extends ContentWriter {
         String contentToEncrypt = IOUtils.toString(input);
         String encrypted = null;
         try {
-            encrypted = EncryptionApi.encrypt(contentToEncrypt, token);
+            encrypted = EncryptionApi.encrypt(collection.getDescription().id,
+                    contentToEncrypt, token);
         } catch (UnirestException e) {
             e.printStackTrace();
         }
         try (OutputStream output = this.getOutputStream(uri)) {
             IOUtils.write(encrypted, output);
-            //org.apache.commons.io.IOUtils.copy(encrypted, output);
         }
     }
 
@@ -63,7 +67,7 @@ public class EncryptedContentWriter extends ContentWriter {
         Path path = resolvePath(uri);;
         logInfo("Writing unencrypted content in collection")
                 .addParameter("uri", uri)
-                .collectionName("............")
+                .collectionName(collection.getDescription().name)
                 .log();
 
         return FileUtils.openOutputStream(path.toFile());

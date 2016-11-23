@@ -8,8 +8,10 @@ import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.CollectionDescription;
 import com.github.onsdigital.zebedee.json.CollectionType;
 import com.github.onsdigital.zebedee.json.Session;
+import com.github.onsdigital.zebedee.util.encryption.EncryptionApi;
 import com.github.onsdigital.zebedee.util.token.TokenDetails;
 import com.github.onsdigital.zebedee.util.token.UserToken;
+import com.mashape.unirest.http.exceptions.UnirestException;
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.jetty.http.HttpStatus;
 
@@ -84,7 +86,7 @@ public class Collection {
     @POST
     public CollectionDescription create(HttpServletRequest request,
                                         HttpServletResponse response,
-                                        CollectionDescription collectionDescription) throws IOException, ZebedeeException {
+                                        CollectionDescription collectionDescription) throws IOException, ZebedeeException, UnirestException {
 
         UserToken.isValid(request).isAdminOrPublisher();
 
@@ -101,6 +103,8 @@ public class Collection {
 
         com.github.onsdigital.zebedee.model.Collection collection = com.github.onsdigital.zebedee.model.Collection.create(
                 collectionDescription, Root.zebedee, null); //session);
+        // Create a key for the collection
+        EncryptionApi.createKey(collection.getDescription().id, EncryptionApi.ROOT_TOKEN);
 
         if (collection.description.type.equals(CollectionType.scheduled)) {
             Root.schedulePublish(collection);

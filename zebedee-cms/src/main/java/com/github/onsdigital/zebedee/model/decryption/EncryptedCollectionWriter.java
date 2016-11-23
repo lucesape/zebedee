@@ -11,10 +11,10 @@ public class EncryptedCollectionWriter extends CollectionWriter {
     public EncryptedCollectionWriter(Collection collection, String token){
 
         ReaderConfiguration config = getConfiguration();
-        inProgress = new EncryptedContentWriter(collection.path.resolve(config.getInProgressFolderName()), "");
-        complete = new EncryptedContentWriter(collection.path.resolve(config.getCompleteFolderName()), "");
-        reviewed = new EncryptedContentWriter(collection.path.resolve(config.getReviewedFolderName()), "");
-        root = new EncryptedContentWriter(collection.path, "");
+        inProgress = new EncryptedContentWriter(collection.path.resolve(config.getInProgressFolderName()), collection, "");
+        complete = new EncryptedContentWriter(collection.path.resolve(config.getCompleteFolderName()), collection, "");
+        reviewed = new EncryptedContentWriter(collection.path.resolve(config.getReviewedFolderName()), collection, "");
+        root = new EncryptedContentWriter(collection.path, collection, "");
     }
 
 }

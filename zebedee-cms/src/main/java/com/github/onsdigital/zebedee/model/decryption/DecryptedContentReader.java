@@ -1,5 +1,6 @@
 package com.github.onsdigital.zebedee.model.decryption;
 
+import com.github.onsdigital.zebedee.model.Collection;
 import com.github.onsdigital.zebedee.reader.FileSystemContentReader;
 import com.github.onsdigital.zebedee.reader.Resource;
 import com.github.onsdigital.zebedee.util.encryption.EncryptionApi;
@@ -15,9 +16,12 @@ public class DecryptedContentReader extends FileSystemContentReader {
 
     private String token;
 
-    public DecryptedContentReader(Path rootPath) {
+    private Collection collection;
+
+    public DecryptedContentReader(Path rootPath, Collection collection) {
         super(rootPath);
         token = EncryptionApi.ROOT_TOKEN;
+        this.collection = collection;
     }
 
     @Override
@@ -48,7 +52,7 @@ public class DecryptedContentReader extends FileSystemContentReader {
         if (data.contains("vault:")) {
             String decrypted = null;
             try {
-                decrypted = EncryptionApi.decrypt(data, token);
+                decrypted = EncryptionApi.decrypt(collection.getDescription().id, data, token);
             } catch (UnirestException e) {
                 e.printStackTrace();
             }

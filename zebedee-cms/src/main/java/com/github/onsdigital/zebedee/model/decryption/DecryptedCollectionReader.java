@@ -25,10 +25,10 @@ public class DecryptedCollectionReader extends CollectionReader {
             throw new NotFoundException("Collection not found");
         }
 
-        inProgress = new DecryptedContentReader(collection.path.resolve(getConfiguration().getInProgressFolderName()));
-        complete = new DecryptedContentReader(collection.path.resolve((getConfiguration().getCompleteFolderName())));
-        reviewed = new DecryptedContentReader(collection.path.resolve((getConfiguration().getReviewedFolderName())));
-        root = new DecryptedContentReader(collection.path);
+        inProgress = new DecryptedContentReader(collection.path.resolve(getConfiguration().getInProgressFolderName()), collection);
+        complete = new DecryptedContentReader(collection.path.resolve((getConfiguration().getCompleteFolderName())), collection);
+        reviewed = new DecryptedContentReader(collection.path.resolve((getConfiguration().getReviewedFolderName())), collection);
+        root = new DecryptedContentReader(collection.path, collection);
     }
 
 }
