@@ -35,6 +35,7 @@ public class ZebedeeLogBuilder extends LogMessageBuilder {
     private static final String PATH = "path";
     private static final String ROW = "row";
     private static final String CELL = "cell";
+    private static final String CDID = "CDID";
 
     private ZebedeeLogBuilder(String description) {
         super(description);
@@ -177,6 +178,11 @@ public class ZebedeeLogBuilder extends LogMessageBuilder {
         if (cell != null) {
             addParameter(CELL, cell.getColumnIndex());
         }
+        return this;
+    }
+
+    public ZebedeeLogBuilder cdid(String cdid) {
+        addParameter(CDID, cdid);
         return this;
     }
 
