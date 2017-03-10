@@ -9,69 +9,123 @@ import com.github.onsdigital.zebedee.model.ContentWriter;
 import com.github.onsdigital.zebedee.model.content.item.VersionedContentItem;
 import com.github.onsdigital.zebedee.reader.ContentReader;
 import com.github.onsdigital.zebedee.reader.FileSystemContentReader;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.nio.file.*;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class DatasetVersionHistory extends SimpleFileVisitor<Path> {
 
     List<Path> datasetFiles = new ArrayList<>();
     Path root;
 
-    public static void findDatasetsWithMissingVersionHistory(String[] args) {
+    public static void fixDatasetsWithMissingVersionHistory(String[] args) {
         // args[1] - source data directory.
 
         Path source = Paths.get(args[1]);
         Path destination = Paths.get(args[2]);
 
-        findDatasetsWithMissingVersionHistory(source, destination);
+        fixDatasetsWithMissingVersionHistory(source, destination);
     }
 
-    private static void findDatasetsWithMissingVersionHistory(Path source, Path destination) {
+    private static void fixDatasetsWithMissingVersionHistory(Path source, Path destination) {
+
+        System.out.println("Finding datatsets to fix the version history for");
+
         List<Path> datasets = new DatasetVersionHistory().findDatasets(source);
+        System.out.println("datasets.size() = " + datasets.size());
+
         List<Path> versionedDatasets = filterDatasetsWithoutVersions(datasets);
+        System.out.println("versionedDatasets.size() = " + versionedDatasets.size());
 
         ContentReader publishedContentReader = new FileSystemContentReader(source); // read dataset / timeseries content from master
         ContentWriter collectionWriter = new ContentWriter(destination);
-        ContentReader collectionReader = new FileSystemContentReader(destination);
-
-        Set<Path> datasetsToFix = new HashSet<>();
 
         for (Path datasetJsonPath : versionedDatasets) {
 
             Path datasetPath = datasetJsonPath.getParent();
+
             String uri = getUriFromPath(source, datasetPath);
+            System.out.println("uri = " + uri);
+
             try {
 
                 // Read the data.json of the dataset and ensure its a csv dataset (not a timeseries dataset.)
                 Page content = publishedContentReader.getContent(uri);
-                if (content.getType() == PageType.dataset
-                        && uri.startsWith("/employmentandlabourmarket")) {
+                if (content.getType() == PageType.dataset) {
 
-                    Path versionDirectory = datasetPath.resolve(VersionedContentItem.getVersionDirectoryName());
-                    File[] files = getOrderedFileList(versionDirectory);
+                    Path versionsDirectory = datasetPath.resolve(VersionedContentItem.getVersionDirectoryName());
+                    File[] versionDirectories = getOrderedFileList(versionsDirectory);
 
-                    for (File file : files) {
-                        fixPreviousVersionDataset(
-                                source,
-                                publishedContentReader,
-                                collectionReader,
-                                collectionWriter,
-                                datasetsToFix,
-                                datasetPath,
-                                uri,
-                                versionDirectory,
-                                file);
+                    // maintain a list of download files added for each version, so when we reach a version
+                    // that has the wrong file listed we can determine the file that was added for this version and
+                    // correct the json.
+                    Set<String> downloadFiles = new HashSet<>();
+
+                    for (File versionDirectory : versionDirectories) {
+
+                        // look for any xls files that are not already in the download list.
+                        // there should be a single file added for each version
+                        List<String> newFileNames = Arrays.stream(versionDirectory.listFiles())
+                                .filter(file -> file.toString().endsWith(".xls"))
+                                .filter(file -> !downloadFiles.contains(FilenameUtils.getName(file.toString())))
+                                .map(file -> FilenameUtils.getName(file.toString()))
+                                .collect(Collectors.toList());
+
+                        //System.out.println("downloadFiles = " + downloadFiles);
+                        //System.out.println("newFiles = " + newFileNames);
+
+                        downloadFiles.addAll(newFileNames);
+
+                        if (newFileNames.size() == 0) {
+                            continue;
+                        }
+
+                        String versionUri = getUriFromPath(source, versionDirectory.toPath());
+                        Page versionPage = publishedContentReader.getContent(versionUri);
+                        Dataset versionedDataset = (Dataset) versionPage;
+
+                        // if the filename listed in the json does not match the new csv that was added for that version.
+                        if (!versionedDataset.getDownloads().get(0).getFile().equals(newFileNames.get(0))) {
+
+                            System.out.println("Identified version to fix: " + versionDirectory
+                                    + " current filename: " + versionedDataset.getDownloads().get(0).getFile()
+                                    + " correct filename: " + newFileNames.get(0));
+
+                            // identify unexpected scenarios
+                            if (versionedDataset.getDownloads().size() > 1) {
+                                System.out.println("*** there is more than one download file listed in uri " + versionDirectory + " " + newFileNames);
+                            }
+                            if (newFileNames.size() > 1) {
+                                System.out.println("*** there is more than one new file for uri " + versionDirectory + " " + newFileNames);
+                            }
+
+                            // update the download file entry in the page and save it to the collection.
+                            versionedDataset.getDownloads().get(0).setFile(newFileNames.get(0));
+                            collectionWriter.writeObject(versionedDataset, versionUri + "/data.json");
+
+                            // also save the current version into the collection unchanged allowing florence to display the page.
+                            Page datasetContent = publishedContentReader.getContent(uri);
+                            collectionWriter.writeObject(datasetContent, uri + "/data.json");
+                        }
                     }
-
-                    fixCurrentVersion(source, publishedContentReader, collectionReader, collectionWriter, datasetPath, uri, versionDirectory);
-
                 }
             } catch (ZebedeeException | IOException e) {
                 e.printStackTrace();

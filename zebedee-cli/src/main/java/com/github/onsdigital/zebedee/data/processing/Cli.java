@@ -79,7 +79,7 @@ public class Cli {
             } else if (line.hasOption("migratetimeseries")) {
                 TimeseriesMigration.migrateTimeseries(args);
             } else if (line.hasOption("datasetversionhistory")) {
-                DatasetVersionHistory.findDatasetsWithMissingVersionHistory(args);
+                DatasetVersionHistory.fixDatasetsWithMissingVersionHistory(args);
             } else if (line.hasOption("updatetimeseries")) {
                 TimeseriesUpdater.updateTimeseries(args);
             } else {
