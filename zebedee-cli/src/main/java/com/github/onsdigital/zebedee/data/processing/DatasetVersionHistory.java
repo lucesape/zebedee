@@ -103,7 +103,7 @@ public class DatasetVersionHistory extends SimpleFileVisitor<Path> {
                         Dataset versionedDataset = (Dataset) versionPage;
 
                         // if the filename listed in the json does not match the new csv that was added for that version.
-                        if (!versionedDataset.getDownloads().get(0).getFile().equals(newFileNames.get(0))) {
+                        if (!newFileNames.contains(versionedDataset.getDownloads().get(0).getFile())) {
 
                             System.out.println("Identified version to fix: " + versionDirectory
                                     + " current filename: " + versionedDataset.getDownloads().get(0).getFile()
