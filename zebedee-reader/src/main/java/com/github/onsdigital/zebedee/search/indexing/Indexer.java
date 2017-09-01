@@ -35,6 +35,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import static com.github.onsdigital.zebedee.content.util.ContentUtil.serialise;
 import static com.github.onsdigital.zebedee.logging.ZebedeeReaderLogBuilder.elasticSearchLog;
+import static com.github.onsdigital.zebedee.logging.ZebedeeReaderLogBuilder.logDebug;
 import static com.github.onsdigital.zebedee.search.configuration.SearchConfiguration.getSearchAlias;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 import static org.apache.commons.lang3.StringUtils.startsWith;
