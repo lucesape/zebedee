@@ -1,22 +1,23 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.configuration.Configuration;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.model.csdb.CsdbImporter;
 import com.github.onsdigital.zebedee.model.csdb.DylanClient;
 import com.github.onsdigital.zebedee.model.csdb.HttpDylanClient;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.POST;
 import java.io.IOException;
 import java.security.PrivateKey;
 
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logInfo;
 
-@Api
+@RestController
 public class CsdbNotify {
 
     // Hold a single instance of DylanClient.
@@ -31,7 +32,7 @@ public class CsdbNotify {
      * @throws IOException
      * @throws ZebedeeException
      */
-    @POST
+    @RequestMapping(value = "/csdbNotify", method = RequestMethod.POST)
     public void csdbNotify(HttpServletRequest request, HttpServletResponse response, String csdbId) throws IOException, ZebedeeException {
         logInfo("Received csdb file notification").addParameter("filename", csdbId).log();
 

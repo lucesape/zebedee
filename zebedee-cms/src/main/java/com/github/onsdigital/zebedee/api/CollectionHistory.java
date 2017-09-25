@@ -1,19 +1,20 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.exceptions.UnexpectedErrorException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
-import com.github.onsdigital.zebedee.session.model.Session;
 import com.github.onsdigital.zebedee.persistence.dao.CollectionHistoryDao;
-import com.github.onsdigital.zebedee.reader.util.RequestUtils;
+import com.github.onsdigital.zebedee.session.model.Session;
 import com.github.onsdigital.zebedee.util.ZebedeeCmsService;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.GET;
 import java.io.IOException;
 
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logError;
@@ -23,7 +24,7 @@ import static com.github.onsdigital.zebedee.persistence.dao.CollectionHistoryDao
  * API returning the collection event history for the specified collection. API collectionID as the last section of the
  * URI.
  */
-@Api
+@RestController
 public class CollectionHistory {
 
     private static CollectionHistoryDao collectionHistoryDao = getCollectionHistoryDao();
@@ -37,15 +38,13 @@ public class CollectionHistory {
      * @return
      * @throws ZebedeeException
      */
-    @GET
+    @RequestMapping(value = "/collectionHistory/{collectionID}", method = RequestMethod.GET)
     public com.github.onsdigital.zebedee.model.collection.audit.CollectionHistory getCollectionEventHistory(
-            HttpServletRequest request, HttpServletResponse response)
+            HttpServletRequest request, HttpServletResponse response, @PathVariable String collectionId)
             throws ZebedeeException, IOException {
 
         Session session = zebedeeCmsService.getSession(request);
         checkPermission(session);
-
-        String collectionId = RequestUtils.getCollectionId(request);
 
         if (StringUtils.isEmpty(collectionId)) {
             throw new BadRequestException("collectionId was not specified.");

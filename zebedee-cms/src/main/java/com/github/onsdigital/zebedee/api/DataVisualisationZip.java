@@ -1,12 +1,10 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.content.page.visualisation.Visualisation;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.UnexpectedErrorException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
-import com.github.onsdigital.zebedee.session.model.Session;
 import com.github.onsdigital.zebedee.model.Collection;
 import com.github.onsdigital.zebedee.model.CollectionWriter;
 import com.github.onsdigital.zebedee.model.ContentWriter;
@@ -14,17 +12,20 @@ import com.github.onsdigital.zebedee.model.SimpleZebedeeResponse;
 import com.github.onsdigital.zebedee.reader.CollectionReader;
 import com.github.onsdigital.zebedee.reader.ContentReader;
 import com.github.onsdigital.zebedee.reader.Resource;
+import com.github.onsdigital.zebedee.session.model.Session;
 import com.github.onsdigital.zebedee.util.ZebedeeCmsService;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.POST;
-import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -47,7 +48,7 @@ import static com.github.onsdigital.zebedee.persistence.model.CollectionEventMet
 /**
  * Endpoint for unzipping an uploaded data visualisation zip file.
  */
-@Api
+@RestController
 public class DataVisualisationZip {
 
     private static final String ZIP_PATH = "zipPath";
@@ -74,10 +75,10 @@ public class DataVisualisationZip {
                     .findFirst().isPresent()) && !zipEntry.isDirectory());
 
     public static final SimpleZebedeeResponse unzipSuccessResponse = new SimpleZebedeeResponse(
-            UNPACK_ZIP_SUCCESS_MSG, Response.Status.OK);
+            UNPACK_ZIP_SUCCESS_MSG, HttpStatus.OK);
 
     public static final SimpleZebedeeResponse deleteContentSuccessResponse = new SimpleZebedeeResponse(
-            DATA_VIS_DELETED_SUCCESS_MSG, Response.Status.OK);
+            DATA_VIS_DELETED_SUCCESS_MSG, HttpStatus.OK);
 
 
     // Use this wrapper class to access static method (cleaner to test).
@@ -113,9 +114,9 @@ public class DataVisualisationZip {
      * Data Visualisation Zip API method for deleting DV content folder and the original zip file if they exists in the
      * specified collection.
      */
-    @DELETE
-    public SimpleZebedeeResponse deleteZipAndContent(HttpServletRequest request, HttpServletResponse response)
-            throws ZebedeeException {
+    @RequestMapping(value = "/DataVisualisationZip/{collectionID}", method = RequestMethod.DELETE)
+    public SimpleZebedeeResponse deleteZipAndContent(HttpServletRequest request, HttpServletResponse response,
+                                                     @PathVariable String collectionID) throws ZebedeeException {
         String zipPath = request.getParameter(ZIP_PATH);
 
         if (StringUtils.isEmpty(zipPath)) {
@@ -125,7 +126,7 @@ public class DataVisualisationZip {
         logDebug(DELETING_ZIP_DEBUG).path(zipPath).log();
 
         Session session = zebedeeCmsService.getSession(request);
-        com.github.onsdigital.zebedee.model.Collection collection = zebedeeCmsService.getCollection(request);
+        com.github.onsdigital.zebedee.model.Collection collection = zebedeeCmsService.getCollection(collectionID);
 
         try {
             collection.deleteDataVisContent(session, Paths.get(zipPath));
@@ -139,9 +140,9 @@ public class DataVisualisationZip {
     /**
      * Data Visualisation Zip API for unzipping a data visualisation zip file.
      */
-    @POST
-    public SimpleZebedeeResponse unpackDataVisualizationZip(HttpServletRequest request, HttpServletResponse response)
-            throws ZebedeeException {
+    @RequestMapping(value = "/DataVisualisationZip/{collectionID}", method = RequestMethod.POST)
+    public SimpleZebedeeResponse unpackDataVisualizationZip(HttpServletRequest request, HttpServletResponse response,
+                                                            @PathVariable String collectionID) throws ZebedeeException {
         String zipPath = request.getParameter(ZIP_PATH);
 
         if (StringUtils.isEmpty(zipPath)) {
@@ -151,7 +152,7 @@ public class DataVisualisationZip {
         logDebug(UNZIP_DEBUG).path(zipPath).log();
 
         Session session = zebedeeCmsService.getSession(request);
-        com.github.onsdigital.zebedee.model.Collection collection = zebedeeCmsService.getCollection(request);
+        com.github.onsdigital.zebedee.model.Collection collection = zebedeeCmsService.getCollection(collectionID);
         CollectionReader collectionReader = zebedeeCmsService.getZebedeeCollectionReader(collection, session);
         CollectionWriter collectionWriter = zebedeeCmsService.getZebedeeCollectionWriter(collection, session);
         ContentReader publishedContentReader = zebedeeCmsService.getPublishedContentReader();
@@ -191,7 +192,7 @@ public class DataVisualisationZip {
 
         } catch (IOException e) {
             logError(e, UNZIPPING_ERROR_MSG).path(zipPath).log();
-            throw new UnexpectedErrorException(UNZIPPING_ERROR_MSG, Response.Status.INTERNAL_SERVER_ERROR.getStatusCode());
+            throw new UnexpectedErrorException(UNZIPPING_ERROR_MSG, HttpStatus.INTERNAL_SERVER_ERROR.value());
         }
     }
 

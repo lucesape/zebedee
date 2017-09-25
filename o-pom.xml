@@ -7,6 +7,12 @@
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>1.5.7.RELEASE</version>
+    </parent>
+
     <modules>
         <module>zebedee-cms</module>
         <module>zebedee-reader</module>
@@ -33,14 +39,34 @@
 
     <repositories>
         <repository>
+            <id>spring-releases</id>
+            <url>https://repo.spring.io/libs-release</url>
+        </repository>
+        <repository>
             <id>splunk-artifactory</id>
             <name>Splunk Releases</name>
             <url>http://splunk.artifactoryonline.com/splunk/ext-releases-local</url>
         </repository>
     </repositories>
 
+    <pluginRepositories>
+        <pluginRepository>
+            <id>spring-releases</id>
+            <url>https://repo.spring.io/libs-release</url>
+        </pluginRepository>
+    </pluginRepositories>
 
     <dependencies>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
 
         <!-- commons -->
         <dependency>
@@ -104,11 +130,11 @@
         <dependencies>
 
             <!-- Main -->
-<!--            <dependency>
+            <dependency>
                 <groupId>com.github.davidcarboni</groupId>
                 <artifactId>restolino</artifactId>
                 <version>0.1.14</version>
-            </dependency>-->
+            </dependency>
 
             <!-- Cryptography -->
             <dependency>

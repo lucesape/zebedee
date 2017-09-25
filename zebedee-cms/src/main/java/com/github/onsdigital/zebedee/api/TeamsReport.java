@@ -1,6 +1,5 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.service.ServiceSupplier;
@@ -15,10 +14,12 @@ import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.GET;
 import java.io.IOException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -33,7 +34,7 @@ import static org.springframework.http.MediaType.APPLICATION_OCTET_STREAM_VALUE;
 /**
  * API endpoint for generating Team members XLS report.
  */
-@Api
+@RestController
 public class TeamsReport {
 
     private static final String CONTENT_DISPOSITION_VALUE = "attachment;filename=teams-report-{0}.xls";
@@ -58,7 +59,7 @@ public class TeamsReport {
      * @throws BadRequestException   error while generating teams report.
      * @throws UnauthorizedException user not authorised to request teams report.
      */
-    @GET
+    @RequestMapping(value = "/teamsReport", method = RequestMethod.GET)
     public void getReport(HttpServletRequest request, HttpServletResponse response) throws IOException,
             BadRequestException, UnauthorizedException {
         Session session = serviceServiceSupplier.getService().get(request);

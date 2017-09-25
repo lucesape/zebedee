@@ -1,19 +1,21 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.ContentDetail;
-import com.github.onsdigital.zebedee.session.model.Session;
 import com.github.onsdigital.zebedee.model.ZebedeeCollectionReader;
 import com.github.onsdigital.zebedee.reader.CollectionReader;
+import com.github.onsdigital.zebedee.session.model.Session;
 import com.github.onsdigital.zebedee.util.ContentTree;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.GET;
 import java.io.IOException;
 
-@Api
+@RestController
 public class CollectionBrowseTree {
 
     /**
@@ -26,12 +28,12 @@ public class CollectionBrowseTree {
      * @return the CollectionBrowseTree.
      * @throws java.io.IOException
      */
-    @GET
-    public ContentDetail get(HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ZebedeeException {
+    @RequestMapping(value = "/collectionBrowseTree/{collectionID}", method = RequestMethod.GET)
+    public ContentDetail get(HttpServletRequest request, HttpServletResponse response, @PathVariable String
+            collectionID) throws IOException, ZebedeeException {
 
         com.github.onsdigital.zebedee.model.Collection collection = Collections
-                .getCollection(request);
+                .getCollection(collectionID);
 
         Session session = Root.zebedee.getSessionsService().get(request);
 

@@ -21,7 +21,7 @@ import static org.mockito.Mockito.*;
 /**
  * Created by dave on 6/3/16.
  */
-public class CollectionHistoryTest extends ZebedeeAPIBaseTestCase {
+/*public class CollectionHistoryTest extends ZebedeeAPIBaseTestCase {
 
     private CollectionHistory api;
 
@@ -56,9 +56,9 @@ public class CollectionHistoryTest extends ZebedeeAPIBaseTestCase {
         return CollectionHistory.class.getSimpleName();
     }
 
-    /**
+    *//**
      * Test verifies success case behaviour.
-     */
+     *//*
     @Test
     public void getCollectionHistorySuccess() throws Exception {
         when(permissionsServiceMock.canEdit(session.getEmail()))
@@ -77,12 +77,12 @@ public class CollectionHistoryTest extends ZebedeeAPIBaseTestCase {
         verify(permissionsServiceMock, times(1)).canEdit(session.getEmail());
     }
 
-    /**
+    *//**
      * Test verifies the expected exception is thrown when a request with no session tries to request the collection
      * event history.
      *
      * @throws Exception expected.
-     */
+     *//*
     @Test(expected = UnauthorizedException.class)
     public void testGetCollectionHistoryWhenNotLoggedIn() throws Exception {
         when(zebedeeCmsServiceMock.getSession(mockRequest))
@@ -98,12 +98,12 @@ public class CollectionHistoryTest extends ZebedeeAPIBaseTestCase {
         }
     }
 
-    /**
+    *//**
      * Test verifies the expected exception is thrown when a user with a valid session tries to request the collection
      * event history when they do not have the necessary permissions.
      *
      * @throws Exception expected.
-     */
+     *//*
     @Test(expected = UnauthorizedException.class)
     public void testGetCollectionHistoryIncorrectPermissions() throws Exception {
         when(permissionsServiceMock.canEdit(session.getEmail()))
@@ -118,4 +118,4 @@ public class CollectionHistoryTest extends ZebedeeAPIBaseTestCase {
             throw zebEx;
         }
     }
-}
+}*/

@@ -1,20 +1,20 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.ResultMessage;
 import com.github.onsdigital.zebedee.session.model.Session;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.jetty.http.HttpStatus;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.POST;
 import java.io.IOException;
 
-@Api
+@RestController
 public class Complete {
 
     /**
@@ -30,12 +30,12 @@ public class Complete {
      * @return a success status wrapped in a {@link ResultMessage} object
      * @throws IOException
      */
-    @POST
-    public ResultMessage complete(HttpServletRequest request, HttpServletResponse response) throws IOException,
-            ZebedeeException{
+    @RequestMapping(value = "/complete/{collectionID}")
+    public ResultMessage complete(HttpServletRequest request, HttpServletResponse response,
+                                  @PathVariable String collectionID) throws IOException, ZebedeeException {
 
         // Locate the collection:
-        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
+        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(collectionID);
         Session session = Root.zebedee.getSessionsService().get(request);
         String uri = request.getParameter("uri");
 

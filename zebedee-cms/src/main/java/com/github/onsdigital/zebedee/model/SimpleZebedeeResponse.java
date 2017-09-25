@@ -1,6 +1,6 @@
 package com.github.onsdigital.zebedee.model;
 
-import javax.ws.rs.core.Response;
+import org.springframework.http.HttpStatus;
 
 /**
  * Simple POJO for json responses.
@@ -10,9 +10,9 @@ public class SimpleZebedeeResponse {
     private String message;
     private int statusCode;
 
-    public SimpleZebedeeResponse(String message, Response.Status statusCode) {
+    public SimpleZebedeeResponse(String message, HttpStatus statusCode) {
         this.message = message;
-        this.statusCode = statusCode.getStatusCode();
+        this.statusCode = statusCode.value();
     }
 
     public String getMessage() {

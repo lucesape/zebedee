@@ -1,26 +1,28 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.CollectionDetail;
 import com.github.onsdigital.zebedee.json.ContentDetail;
 import com.github.onsdigital.zebedee.json.Events;
-import com.github.onsdigital.zebedee.session.model.Session;
-import com.github.onsdigital.zebedee.teams.model.Team;
 import com.github.onsdigital.zebedee.model.ZebedeeCollectionReader;
 import com.github.onsdigital.zebedee.reader.CollectionReader;
 import com.github.onsdigital.zebedee.service.ContentDeleteService;
+import com.github.onsdigital.zebedee.session.model.Session;
+import com.github.onsdigital.zebedee.teams.model.Team;
 import com.github.onsdigital.zebedee.util.ContentDetailUtil;
-import org.eclipse.jetty.http.HttpStatus;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.GET;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
-@Api
+@RestController
 public class CollectionDetails {
 
     private static ContentDeleteService contentDeleteService = ContentDeleteService.getInstance();
@@ -35,21 +37,21 @@ public class CollectionDetails {
      * @return the CollectionDetail.
      * @throws IOException
      */
-    @GET
-    public CollectionDetail get(HttpServletRequest request, HttpServletResponse response)
+    @RequestMapping(value = "/collectionDetails/{collectionID}", method = RequestMethod.GET)
+    public CollectionDetail get(HttpServletRequest request, HttpServletResponse response, @PathVariable String collectionID)
             throws IOException, ZebedeeException {
 
         com.github.onsdigital.zebedee.model.Collection collection = Collections
-                .getCollection(request);
+                .getCollection(collectionID);
 
         if (collection == null) {
-            response.setStatus(HttpStatus.NOT_FOUND_404);
+            response.setStatus(HttpStatus.NOT_FOUND.value());
             return null;
         }
 
         Session session = Root.zebedee.getSessionsService().get(request);
         if (!Root.zebedee.getPermissionsService().canView(session.getEmail(), collection.description)) {
-            response.setStatus(HttpStatus.UNAUTHORIZED_401);
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
             return null;
         }
 

@@ -1,6 +1,5 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
@@ -9,11 +8,13 @@ import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.json.PermissionDefinition;
 import com.github.onsdigital.zebedee.session.model.Session;
 import org.apache.commons.lang3.BooleanUtils;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
 import java.io.IOException;
 
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logInfo;
@@ -21,7 +22,7 @@ import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logInfo;
 /**
  * Created by david on 12/03/2015.
  */
-@Api
+@RestController
 public class Permission {
 
     /**
@@ -39,8 +40,9 @@ public class Permission {
      * @throws UnauthorizedException If the logged in user is not an administrator.
      * @throws BadRequestException   If the user specified in the {@link PermissionDefinition} is not found.
      */
-    @POST
-    public String grantPermission(HttpServletRequest request, HttpServletResponse response, PermissionDefinition permissionDefinition)
+    @RequestMapping(value = "/permission", method = RequestMethod.POST)
+    public String grantPermission(HttpServletRequest request, HttpServletResponse response,
+                                  @RequestBody PermissionDefinition permissionDefinition)
             throws IOException, ZebedeeException {
 
         Session session = Root.zebedee.getSessionsService().get(request);
@@ -99,15 +101,16 @@ public class Permission {
     /**
      * Grants the specified permissions.
      *
-     * @param request              Should be of the form {@code /permission?email=florence@example.com}
-     * @param response             A permissions object for that user
+     * @param request  Should be of the form {@code /permission?email=florence@example.com}
+     * @param response A permissions object for that user
      * @return
      * @throws IOException           If an error occurs accessing data.
      * @throws UnauthorizedException If the user is not an administrator.
      * @throws BadRequestException   If the user specified in the {@link PermissionDefinition} is not found.
      */
-    @GET
-    public PermissionDefinition getPermissions(HttpServletRequest request, HttpServletResponse response) throws IOException, NotFoundException, UnauthorizedException {
+    @RequestMapping(value = "/permission", method = RequestMethod.GET)
+    public PermissionDefinition getPermissions(HttpServletRequest request, HttpServletResponse response)
+            throws IOException, NotFoundException, UnauthorizedException {
 
         Session session = Root.zebedee.getSessionsService().get(request);
         String email = request.getParameter("email");

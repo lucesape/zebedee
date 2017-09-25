@@ -1,17 +1,18 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
-import com.github.onsdigital.zebedee.model.CollectionOwner;
 import com.github.onsdigital.zebedee.exceptions.UnexpectedErrorException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
+import com.github.onsdigital.zebedee.model.CollectionOwner;
 import com.github.onsdigital.zebedee.session.model.Session;
 import com.github.onsdigital.zebedee.util.ZebedeeCmsService;
 import com.google.gson.JsonObject;
 import org.apache.commons.io.IOUtils;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.GET;
 import java.io.IOException;
 
 import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logError;
@@ -19,12 +20,12 @@ import static com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder.logError;
 /**
  * Created by dave on 5/13/16.
  */
-@Api
+@RestController
 public class UserPublisherType {
 
     private static ZebedeeCmsService zebedeeCmsService = ZebedeeCmsService.getInstance();
 
-    @GET
+    @RequestMapping(value = "/userPublisherType", method = RequestMethod.GET)
     public void getCollectionUserType(HttpServletRequest request, HttpServletResponse response) throws ZebedeeException {
         Session session = zebedeeCmsService.getSession(request);
         try {

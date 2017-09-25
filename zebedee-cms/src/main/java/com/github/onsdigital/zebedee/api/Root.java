@@ -1,15 +1,12 @@
 package com.github.onsdigital.zebedee.api;
 
 import com.github.davidcarboni.ResourceUtils;
-import com.github.davidcarboni.restolino.json.Serialiser;
 import com.github.onsdigital.zebedee.Zebedee;
 import com.github.onsdigital.zebedee.ZebedeeConfiguration;
 import com.github.onsdigital.zebedee.configuration.Configuration;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
-import com.github.onsdigital.zebedee.user.model.User;
-import com.github.onsdigital.zebedee.json.serialiser.IsoDateSerializer;
 import com.github.onsdigital.zebedee.model.Collection;
 import com.github.onsdigital.zebedee.model.Collections;
 import com.github.onsdigital.zebedee.model.Content;
@@ -18,6 +15,7 @@ import com.github.onsdigital.zebedee.model.csdb.CsdbImporter;
 import com.github.onsdigital.zebedee.model.publishing.scheduled.PublishScheduler;
 import com.github.onsdigital.zebedee.model.publishing.scheduled.Scheduler;
 import com.github.onsdigital.zebedee.reader.configuration.ReaderConfiguration;
+import com.github.onsdigital.zebedee.user.model.User;
 import com.github.onsdigital.zebedee.util.SlackNotification;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -31,7 +29,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -77,7 +74,9 @@ public class Root {
         logDebug("zebedee init").log();
 
         // Set ISO date formatting in Gson to match Javascript Date.toISODate()
-        Serialiser.getBuilder().registerTypeAdapter(Date.class, new IsoDateSerializer());
+
+        // TODO HOW TO DO THIS?
+        //Serialiser.getBuilder().registerTypeAdapter(Date.class, new IsoDateSerializer());
 
         // Set the class that will be used to determine a ClassLoader when loading resources:
         ResourceUtils.classLoaderClass = Root.class;

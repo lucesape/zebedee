@@ -1,20 +1,22 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.session.model.Session;
-import org.eclipse.jetty.http.HttpStatus;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.POST;
 import java.io.IOException;
 
 /**
  * Created by kanemorgan on 01/04/2015.
  */
-@Api
+@RestController
 public class Approve {
 
     /**
@@ -31,10 +33,10 @@ public class Approve {
      * @return Save successful status of the description.
      * @throws IOException
      */
-    @POST
-    public boolean approveCollection(HttpServletRequest request, HttpServletResponse response) throws IOException, ZebedeeException {
-
-        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
+    @RequestMapping(value = "/approve/{collectionID}", method = RequestMethod.POST)
+    public boolean approveCollection(HttpServletRequest request, HttpServletResponse response,
+                                     @PathVariable String collectionID) throws IOException, ZebedeeException {
+        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(collectionID);
         Session session = Root.zebedee.getSessionsService().get(request);
 
         Root.zebedee.getCollections().approve(collection, session);

@@ -1,19 +1,22 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.session.model.Session;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.POST;
 import java.io.IOException;
 
-@Api
+@RestController
 public class ContentRename {
+
     /**
      * Just like content move but has additional checks to ensure only a rename takes place in the same directory.
      *
@@ -24,12 +27,12 @@ public class ContentRename {
      * @throws BadRequestException
      * @throws UnauthorizedException
      */
-    @POST
-    public boolean RenameContent(HttpServletRequest request, HttpServletResponse response) throws IOException,
-            ZebedeeException {
+    @RequestMapping(value = "/contentRename/{collectionID}", method = RequestMethod.POST)
+    public boolean RenameContent(HttpServletRequest request, HttpServletResponse response, @PathVariable String
+            collectionID) throws IOException, ZebedeeException {
 
         Session session = Root.zebedee.getSessionsService().get(request);
-        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
+        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(collectionID);
 
         String uri = request.getParameter("uri");
         String toUri = request.getParameter("toUri");

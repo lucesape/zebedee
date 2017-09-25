@@ -1,25 +1,27 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.json.Credentials;
+import com.github.onsdigital.zebedee.service.ServiceSupplier;
 import com.github.onsdigital.zebedee.session.model.Session;
 import com.github.onsdigital.zebedee.user.model.User;
-import com.github.onsdigital.zebedee.service.ServiceSupplier;
 import com.github.onsdigital.zebedee.user.service.UsersService;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.POST;
 import java.io.IOException;
 
 /**
  * API for resetting or changing a password.
  */
-@Api
+@RestController
 public class Password {
 
     /**
@@ -30,7 +32,7 @@ public class Password {
 
     /**
      * Update password
-     *
+     * <p>
      * Will set password as permanent if it is the user updating
      * Will set password as temporary if an admin does it
      *
@@ -42,8 +44,10 @@ public class Password {
      * @throws UnauthorizedException
      * @throws BadRequestException
      */
-    @POST
-    public String setPassword(HttpServletRequest request, HttpServletResponse response, Credentials credentials) throws IOException, UnauthorizedException, BadRequestException, NotFoundException {
+    @RequestMapping(value = "/password", method = RequestMethod.POST)
+    public String setPassword(HttpServletRequest request, HttpServletResponse response,
+                              @RequestBody Credentials credentials)
+            throws IOException, UnauthorizedException, BadRequestException, NotFoundException {
 
         // Get the user session
         Session session = Root.zebedee.getSessionsService().get(request);

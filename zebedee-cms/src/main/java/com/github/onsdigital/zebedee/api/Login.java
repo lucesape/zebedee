@@ -1,28 +1,30 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.json.Credentials;
-import com.github.onsdigital.zebedee.user.model.User;
 import com.github.onsdigital.zebedee.logging.ZebedeeLogBuilder;
 import com.github.onsdigital.zebedee.service.ServiceSupplier;
-import com.github.onsdigital.zebedee.user.service.UsersService;
 import com.github.onsdigital.zebedee.session.service.SessionsService;
+import com.github.onsdigital.zebedee.user.model.User;
+import com.github.onsdigital.zebedee.user.service.UsersService;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.jetty.http.HttpStatus;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.POST;
 import java.io.IOException;
 
 /**
  * API for processing login requests.
  */
-@Api
+@RestController
 public class Login {
 
     private static final String LOGIN_SUCCESS_MSG = "Florence login success";
@@ -48,11 +50,13 @@ public class Login {
      * @return A session ID to be passed in the {@value SessionsService#TOKEN_HEADER} header.
      * @throws IOException
      */
-    @POST
-    public String authenticate(HttpServletRequest request, HttpServletResponse response, Credentials credentials) throws IOException, NotFoundException, BadRequestException {
+    @RequestMapping(value = "/login", method = RequestMethod.POST)
+    public String authenticate(HttpServletRequest request, HttpServletResponse response,
+                               @RequestBody Credentials credentials)
+            throws IOException, NotFoundException, BadRequestException {
 
         if (credentials == null || StringUtils.isBlank(credentials.email)) {
-            response.setStatus(HttpStatus.BAD_REQUEST_400);
+            response.setStatus(HttpStatus.BAD_REQUEST.value());
             return "Please provide credentials (email, password).";
         }
 
@@ -60,7 +64,7 @@ public class Login {
         boolean result = user.authenticate(credentials.password);
 
         if (!result) {
-            response.setStatus(HttpStatus.UNAUTHORIZED_401);
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
             Audit.Event.LOGIN_AUTHENTICATION_FAILURE.parameters().host(request).user(credentials.email).log();
             ZebedeeLogBuilder.logInfo(LOGIN_AUTH_FAILURE_MSG).user(credentials.email).log();
             return "Authentication failed.";
@@ -72,14 +76,14 @@ public class Login {
         usersServiceSupplier.getService().removeStaleCollectionKeys(user.getEmail());
 
         if (BooleanUtils.isTrue(user.getTemporaryPassword())) {
-            response.setStatus(HttpStatus.EXPECTATION_FAILED_417);
+            response.setStatus(HttpStatus.EXPECTATION_FAILED.value());
             Audit.Event.LOGIN_PASSWORD_CHANGE_REQUIRED.parameters().host(request).user(credentials.email).log();
             ZebedeeLogBuilder.logInfo(PASSWORD_CHANGE_REQUIRED_MSG).user(credentials.email).log();
             return "Password change required";
         } else {
             Audit.Event.LOGIN_SUCCESS.parameters().host(request).user(credentials.email).log();
             ZebedeeLogBuilder.logInfo(LOGIN_SUCCESS_MSG).user(credentials.email).log();
-            response.setStatus(HttpStatus.OK_200);
+            response.setStatus(HttpStatus.OK.value());
         }
 
         return Root.zebedee.openSession(credentials).getId();

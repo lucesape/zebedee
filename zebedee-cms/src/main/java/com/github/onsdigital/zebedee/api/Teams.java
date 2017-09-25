@@ -1,26 +1,26 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
-import com.github.davidcarboni.restolino.helpers.Path;
 import com.github.onsdigital.zebedee.Zebedee;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.ConflictException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
-import com.github.onsdigital.zebedee.session.model.Session;
-import com.github.onsdigital.zebedee.teams.model.Team;
-import com.github.onsdigital.zebedee.teams.model.TeamList;
 import com.github.onsdigital.zebedee.model.Collection;
 import com.github.onsdigital.zebedee.model.KeyManager;
 import com.github.onsdigital.zebedee.service.ServiceSupplier;
+import com.github.onsdigital.zebedee.session.model.Session;
+import com.github.onsdigital.zebedee.teams.model.Team;
+import com.github.onsdigital.zebedee.teams.model.TeamList;
 import com.github.onsdigital.zebedee.user.service.UsersService;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
@@ -36,7 +36,7 @@ import java.util.Set;
  * <li>{@code /teams/[teamname]?email=user@example.com}</li>
  * </ul></p>
  */
-@Api
+@RestController
 public class Teams {
 
     /**
@@ -45,6 +45,20 @@ public class Teams {
      */
     private ServiceSupplier<UsersService> usersServiceSupplier = () -> Root.zebedee.getUsersService();
 
+
+    public boolean createTeam(HttpServletRequest request, HttpServletResponse response, String teamName)
+            throws IOException, ConflictException, UnauthorizedException, NotFoundException {
+        Session session = Root.zebedee.getSessionsService().get(request);
+        Root.zebedee.getTeamsService().createTeam(teamName, session);
+
+        Audit.Event.TEAM_CREATED
+                .parameters()
+                .host(request)
+                .team(teamName)
+                .actionedBy(session.getEmail())
+                .log();
+        return true;
+    }
 
     /**
      * POST {@code /teams/[teamname]} creates a team with name {@code teamname}
@@ -58,38 +72,22 @@ public class Teams {
      * @throws UnauthorizedException {@value org.eclipse.jetty.http.HttpStatus#UNAUTHORIZED_401} if user does not have permission
      * @throws NotFoundException     {@value org.eclipse.jetty.http.HttpStatus#NOT_FOUND_404} if team can not be found/created
      */
-    @POST
-    public boolean post(HttpServletRequest request, HttpServletResponse response) throws IOException, ConflictException, UnauthorizedException, NotFoundException, BadRequestException {
+    @RequestMapping(value = "/teams/{teamName}", method = RequestMethod.POST)
+    public boolean post(HttpServletRequest request, HttpServletResponse response, @PathVariable String teamName)
+            throws IOException, ConflictException, UnauthorizedException, NotFoundException, BadRequestException {
 
         String email = request.getParameter("email");
         if (email == null) {
-            return createTeam(request, response);
+            return createTeam(request, response, teamName);
         } else {
-            return addTeamMember(request, response);
+            return addTeamMember(request, response, teamName);
         }
     }
 
-    public boolean createTeam(HttpServletRequest request, HttpServletResponse response) throws IOException, ConflictException, UnauthorizedException, NotFoundException {
-
-        Session session = Root.zebedee.getSessionsService().get(request);
-        String teamName = getTeamName(request);
-
-        Root.zebedee.getTeamsService().createTeam(teamName, session);
-
-        Audit.Event.TEAM_CREATED
-                .parameters()
-                .host(request)
-                .team(teamName)
-                .actionedBy(session.getEmail())
-                .log();
-        return true;
-    }
-
-    public boolean addTeamMember(HttpServletRequest request, HttpServletResponse response) throws UnauthorizedException, IOException, NotFoundException, BadRequestException {
+    public boolean addTeamMember(HttpServletRequest request, HttpServletResponse response, String teamName) throws
+            UnauthorizedException, IOException, NotFoundException, BadRequestException {
         Zebedee zebedee = Root.zebedee;
         Session session = zebedee.getSessionsService().get(request);
-
-        String teamName = getTeamName(request);
 
         String email = request.getParameter("email");
         Team team = zebedee.getTeamsService().findTeam(teamName);
@@ -119,21 +117,20 @@ public class Teams {
      * @throws NotFoundException     {@value org.eclipse.jetty.http.HttpStatus#NOT_FOUND_404} if the team doesn't exist / user doesn't exist/ user isn't in this team
      * @throws BadRequestException   {@value org.eclipse.jetty.http.HttpStatus#CONFLICT_409} if the team cannot be deleted for some other reason
      */
-    @DELETE
-    public boolean delete(HttpServletRequest request, HttpServletResponse response) throws IOException, UnauthorizedException, NotFoundException, BadRequestException {
+    @RequestMapping(value = "/teams/{teamName}", method = RequestMethod.DELETE)
+    public boolean delete(HttpServletRequest request, HttpServletResponse response, @PathVariable String teamName)
+            throws IOException, UnauthorizedException, NotFoundException, BadRequestException {
 
         String email = request.getParameter("email");
         if (email == null) {
-            return deleteTeam(request, response);
+            return deleteTeam(request, response, teamName);
         } else {
-            return removeTeamMember(request, response);
+            return removeTeamMember(request, response, teamName);
         }
     }
 
-    public boolean deleteTeam(HttpServletRequest request, HttpServletResponse response) throws NotFoundException, BadRequestException, UnauthorizedException, IOException {
-
-        String teamName = getTeamName(request);
-
+    public boolean deleteTeam(HttpServletRequest request, HttpServletResponse response, String teamName)
+            throws NotFoundException, BadRequestException, UnauthorizedException, IOException {
         Zebedee zebedee = Root.zebedee;
         Session session = zebedee.getSessionsService().get(request);
         Team team = zebedee.getTeamsService().findTeam(teamName);
@@ -150,10 +147,8 @@ public class Teams {
         return true;
     }
 
-    public boolean removeTeamMember(HttpServletRequest request, HttpServletResponse response) throws UnauthorizedException, IOException, NotFoundException, BadRequestException {
-
-        String teamName = getTeamName(request);
-
+    public boolean removeTeamMember(HttpServletRequest request, HttpServletResponse response, String teamName)
+            throws UnauthorizedException, IOException, NotFoundException, BadRequestException {
         Zebedee zebedee = Root.zebedee;
         Session session = Root.zebedee.getSessionsService().get(request);
         String email = request.getParameter("email");
@@ -205,30 +200,18 @@ public class Teams {
      * @throws IOException
      * @throws NotFoundException {@value org.eclipse.jetty.http.HttpStatus#NOT_FOUND_404} if the team doesn't exist
      */
-    @GET
-    public Object get(HttpServletRequest request, HttpServletResponse response) throws IOException, NotFoundException {
+    @RequestMapping(value = "/teams/{teamName}", method = RequestMethod.GET)
+    public Object get(HttpServletRequest request, HttpServletResponse response, @PathVariable String teamName) throws
+            IOException,
+            NotFoundException {
         Object result = null;
-        if (getTeamName(request) != null) {
-            result = Root.zebedee.getTeamsService().findTeam(getTeamName(request));
+        if (teamName != null && StringUtils.isNotEmpty(teamName)) {
+            result = Root.zebedee.getTeamsService().findTeam(teamName);
         } else {
             List<Team> teams = Root.zebedee.getTeamsService().listTeams();
             teams.sort((t1, t2) -> t1.getName().toUpperCase().compareTo(t2.getName().toUpperCase()));
             result = new TeamList(teams);
         }
         return result;
-    }
-
-
-    private static String getTeamName(HttpServletRequest request)
-            throws IOException {
-
-        Path path = Path.newInstance(request);
-        List<String> segments = path.segments();
-
-        if (segments.size() > 1) {
-            return segments.get(1);
-        }
-
-        return null;
     }
 }

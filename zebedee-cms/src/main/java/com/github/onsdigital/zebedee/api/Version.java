@@ -1,24 +1,25 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
-import com.github.onsdigital.zebedee.session.model.Session;
 import com.github.onsdigital.zebedee.model.Collection;
 import com.github.onsdigital.zebedee.model.CollectionWriter;
 import com.github.onsdigital.zebedee.model.ZebedeeCollectionWriter;
 import com.github.onsdigital.zebedee.model.content.item.ContentItemVersion;
+import com.github.onsdigital.zebedee.session.model.Session;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.POST;
 import java.io.IOException;
 
-@Api
+@RestController
 public class Version {
 
     /**
@@ -32,15 +33,16 @@ public class Version {
      *                 Returns HTTP 409 if a version has already been created for this URI in the collection
      *                 Returns HTTP 401 if the user is not authorised to edit content.
      */
-    @POST
-    public String create(HttpServletRequest request, HttpServletResponse response) throws IOException, ZebedeeException {
+    @RequestMapping(value = "/version/{collectionID}", method = RequestMethod.POST)
+    public String create(HttpServletRequest request, HttpServletResponse response, @PathVariable String collectionID)
+            throws IOException, ZebedeeException {
 
         Session session = Root.zebedee.getSessionsService().get(request);
         if (session == null || !Root.zebedee.getPermissionsService().canEdit(session.getEmail())) {
             throw new UnauthorizedException("You are not authorised to edit content.");
         }
 
-        Collection collection = Collections.getCollection(request);
+        Collection collection = Collections.getCollection(collectionID);
         String uri = request.getParameter("uri");
 
         CollectionWriter collectionWriter = new ZebedeeCollectionWriter(Root.zebedee, collection, session);
@@ -66,15 +68,16 @@ public class Version {
      *                 Returns HTTP 404 if the version specified does not exist as part of the collection
      *                 Returns HTTP 401 if the user is not authorised to edit content.
      */
-    @DELETE
-    public boolean delete(HttpServletRequest request, HttpServletResponse response) throws IOException, BadRequestException, NotFoundException, UnauthorizedException {
+    @RequestMapping(value = "/version/{collectionID}", method = RequestMethod.DELETE)
+    public boolean delete(HttpServletRequest request, HttpServletResponse response, @PathVariable String collectionID)
+            throws IOException, BadRequestException, NotFoundException, UnauthorizedException {
 
         Session session = Root.zebedee.getSessionsService().get(request);
         if (session == null || !Root.zebedee.getPermissionsService().canEdit(session.getEmail())) {
             throw new UnauthorizedException("You are not authorised to edit content.");
         }
 
-        Collection collection = Collections.getCollection(request);
+        Collection collection = Collections.getCollection(collectionID);
         String uri = request.getParameter("uri");
 
         collection.deleteVersion(uri);

@@ -1,29 +1,33 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
-import com.github.onsdigital.zebedee.session.model.Session;
 import com.github.onsdigital.zebedee.model.Collection;
+import com.github.onsdigital.zebedee.session.model.Session;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.POST;
 import java.io.IOException;
 
-@Api
+@RestController
 public class ContentMove {
+
     /**
      * Move or rename content in a collection.
      * <p>
      * This operation could technically be done using a separate delete and post method for content, but this method
      * does not involve re-uploading the content so is more efficient in terms of network IO
      */
-    @POST
-    public boolean MoveContent(HttpServletRequest request, HttpServletResponse response) throws IOException, ZebedeeException {
+    @RequestMapping(value = "/contentMove/{collectionID}", method = RequestMethod.POST)
+    public boolean MoveContent(HttpServletRequest request, HttpServletResponse response, @PathVariable String
+            collectionID) throws IOException, ZebedeeException {
 
         Session session = Root.zebedee.getSessionsService().get(request);
-        Collection collection = Collections.getCollection(request);
+        Collection collection = Collections.getCollection(collectionID);
 
         String uri = request.getParameter("uri");
         String toUri = request.getParameter("toUri");

@@ -1,6 +1,5 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.content.page.base.Page;
 import com.github.onsdigital.zebedee.content.page.statistics.document.figure.table.TableModifications;
@@ -9,13 +8,13 @@ import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.TableBuilderException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
-import com.github.onsdigital.zebedee.session.model.Session;
 import com.github.onsdigital.zebedee.model.Collection;
 import com.github.onsdigital.zebedee.model.ZebedeeCollectionReader;
 import com.github.onsdigital.zebedee.persistence.model.CollectionHistoryEvent;
 import com.github.onsdigital.zebedee.reader.CollectionReader;
 import com.github.onsdigital.zebedee.reader.Resource;
 import com.github.onsdigital.zebedee.reader.util.RequestUtils;
+import com.github.onsdigital.zebedee.session.model.Session;
 import com.github.onsdigital.zebedee.util.XlsToHtmlConverter;
 import com.google.gson.JsonIOException;
 import com.google.gson.JsonSyntaxException;
@@ -24,13 +23,15 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 import org.w3c.dom.Node;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.core.Response;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 import java.io.ByteArrayInputStream;
@@ -49,7 +50,7 @@ import static com.github.onsdigital.zebedee.persistence.model.CollectionEventMet
 /**
  * Created by dave on 4/15/16.
  */
-@Api
+@RestController
 public class ModifyTable {
 
     private static final String HTML_FILE_EXT = ".html";
@@ -61,12 +62,12 @@ public class ModifyTable {
     /**
      * Update/Create XLS table metadata - i.e rows to be excluded from the generated HTML table.
      */
-    @POST
-    public void modifyTable(HttpServletRequest request, HttpServletResponse response)
+    @RequestMapping(value = "/modifyTable/{collectionID}", method = RequestMethod.POST)
+    public void modifyTable(HttpServletRequest request, HttpServletResponse response, @PathVariable String collectionID)
             throws IOException, ZebedeeException, ParserConfigurationException, TransformerException, FileUploadException {
 
         Session session = Root.zebedee.getSessionsService().get(request);
-        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
+        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(collectionID);
         CollectionReader collectionReader = new ZebedeeCollectionReader(Root.zebedee, collection, session);
         String currentUri = request.getParameter(CURRENT_URI);
         String newUri = request.getParameter(NEW_URI);
@@ -82,7 +83,7 @@ public class ModifyTable {
 
         String htmlTableStr = generateXlsTable(request, collectionReader, currentUri + XLS_FILE_EXT, tableJson.getModifications());
         writeData(request, session, collectionReader, collection, currentUri, newUri, htmlTableStr, tableJson);
-        response.setStatus(Response.Status.CREATED.getStatusCode());
+        response.setStatus(HttpStatus.CREATED.value());
         Audit.Event.COLLECTION_TABLE_METADATA_MODIFIED
                 .parameters()
                 .host(request)
@@ -94,11 +95,11 @@ public class ModifyTable {
     /**
      * Get the current Table metadata.
      */
-    @GET
-    public void getTableMetadata(HttpServletRequest request, HttpServletResponse response) throws IOException,
-            ZebedeeException {
+    @RequestMapping(value = "/modifyTable/{collectionID}", method = RequestMethod.GET)
+    public void getTableMetadata(HttpServletRequest request, HttpServletResponse response,
+                                 @PathVariable String collectionID) throws IOException, ZebedeeException {
         Session session = Root.zebedee.getSessionsService().get(request);
-        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
+        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(collectionID);
 
         CollectionReader collectionReader = new ZebedeeCollectionReader(Root.zebedee, collection, session);
 

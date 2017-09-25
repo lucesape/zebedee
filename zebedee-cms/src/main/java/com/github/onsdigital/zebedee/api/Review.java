@@ -1,6 +1,5 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
@@ -8,20 +7,22 @@ import com.github.onsdigital.zebedee.json.ResultMessage;
 import com.github.onsdigital.zebedee.session.model.Session;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.jetty.http.HttpStatus;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.POST;
 import java.io.IOException;
 
-@Api
+@RestController
 public class Review {
 
     /**
      * Moves files between collections using the endpoint <code>/Review/[CollectionName]?uri=[uri]</code>
      *
-     * @param request This should contain a X-Florence-Token header for the current session
+     * @param request  This should contain a X-Florence-Token header for the current session
      * @param response <ul>
      *                 <li>If the collection does not exist:  {@link HttpStatus#NOT_FOUND_404}</li>
      *                 <li>If the content item does not exist:  {@link HttpStatus#NOT_FOUND_404}</li>
@@ -31,13 +32,13 @@ public class Review {
      * @return a success status wrapped in a {@link ResultMessage} object
      * @throws IOException
      */
-    @POST
-    public ResultMessage review(HttpServletRequest request, HttpServletResponse response) throws IOException,
-            ZebedeeException {
+    @RequestMapping(value = "/review/{collectionID}", method = RequestMethod.POST)
+    public ResultMessage review(HttpServletRequest request, HttpServletResponse response,
+                                @PathVariable String collectionID) throws IOException, ZebedeeException {
 
         // Collate parameters
-        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
-        if(collection == null) {
+        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(collectionID);
+        if (collection == null) {
             throw new NotFoundException("Collection not found");
         }
 
@@ -58,5 +59,4 @@ public class Review {
                 .log();
         return new ResultMessage("URI reviewed.");
     }
-
 }

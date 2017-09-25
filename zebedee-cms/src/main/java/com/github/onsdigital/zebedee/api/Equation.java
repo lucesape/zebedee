@@ -1,12 +1,10 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.content.page.statistics.document.figure.AssociatedFile;
 import com.github.onsdigital.zebedee.content.util.ContentUtil;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
-import com.github.onsdigital.zebedee.session.model.Session;
 import com.github.onsdigital.zebedee.model.Collection;
 import com.github.onsdigital.zebedee.model.CollectionWriter;
 import com.github.onsdigital.zebedee.model.ZebedeeCollectionReader;
@@ -16,13 +14,17 @@ import com.github.onsdigital.zebedee.reader.CollectionReader;
 import com.github.onsdigital.zebedee.service.EquationService;
 import com.github.onsdigital.zebedee.service.EquationServiceResponse;
 import com.github.onsdigital.zebedee.service.SvgService;
+import com.github.onsdigital.zebedee.session.model.Session;
 import org.apache.batik.transcoder.TranscoderException;
 import org.apache.commons.fileupload.FileUploadException;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.POST;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,18 +36,19 @@ import java.util.ArrayList;
 /**
  * Given some Tex equation input, return the equation in SVG format.
  */
-@Api
+@RestController
 public class Equation {
 
-    @POST
+    @RequestMapping(value = "/equation/{collectionID}", method = RequestMethod.POST)
     public boolean renderEquation(
             HttpServletRequest request,
             HttpServletResponse response,
-            com.github.onsdigital.zebedee.content.page.statistics.document.figure.equation.Equation equation
+            @RequestBody com.github.onsdigital.zebedee.content.page.statistics.document.figure.equation.Equation equation,
+            @PathVariable String collectionID
     ) throws IOException, ZebedeeException, FileUploadException, TranscoderException {
 
         Session session = Root.zebedee.getSessionsService().get(request);
-        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
+        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(collectionID);
         String uri = request.getParameter("uri");
 
         Path path = Paths.get(uri);
@@ -89,14 +92,12 @@ public class Equation {
         }
     }
 
-    @DELETE
-    public boolean deleteEquation(
-            HttpServletRequest request,
-            HttpServletResponse response
+    @RequestMapping(value = "/equation/{collectionID}", method = RequestMethod.DELETE)
+    public boolean deleteEquation(HttpServletRequest request, HttpServletResponse response, @PathVariable String collectionID
     ) throws IOException, ZebedeeException, FileUploadException, TranscoderException {
 
         Session session = Root.zebedee.getSessionsService().get(request);
-        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
+        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(collectionID);
         String uri = request.getParameter("uri");
 
         Path path = Paths.get(uri);

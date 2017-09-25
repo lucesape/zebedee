@@ -85,14 +85,14 @@ public class ZebedeeCmsService {
         return null;
     }
 
-    public Collection getCollection(HttpServletRequest request) throws ZebedeeException {
+/*    public Collection getCollection(HttpServletRequest request) throws ZebedeeException {
         try {
             return Collections.getCollection(request);
         } catch (IOException e) {
             logError(e, COLLECTION_NOT_FOUND_MSG).logAndThrow(NotFoundException.class);
         }
         return null;
-    }
+    }*/
 
     public Collection getCollection(String collectionId) throws ZebedeeException {
         try {

@@ -1,23 +1,25 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.json.PingRequest;
 import com.github.onsdigital.zebedee.json.PingResponse;
-import com.github.onsdigital.zebedee.session.model.Session;
 import com.github.onsdigital.zebedee.logging.ZebedeeReaderLogBuilder;
-import com.github.onsdigital.zebedee.session.service.SessionsService;
 import com.github.onsdigital.zebedee.reader.util.RequestUtils;
+import com.github.onsdigital.zebedee.session.model.Session;
+import com.github.onsdigital.zebedee.session.service.SessionsService;
 import com.github.onsdigital.zebedee.util.mertics.service.MetricsService;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.POST;
 import java.io.IOException;
 
 /**
  * Created by thomasridd on 14/07/15.
  */
-@Api
+@RestController
 public class Ping {
 
     private static MetricsService metricsService = MetricsService.getInstance();
@@ -27,16 +29,15 @@ public class Ping {
      * <p>
      * Returns true if the session is alive, false otherwise
      */
-    @POST
-    public PingResponse ping(HttpServletRequest request, HttpServletResponse response, PingRequest pingRequest) throws IOException {
+    @RequestMapping(value = "/ping", method = RequestMethod.POST)
+    public PingResponse ping(HttpServletRequest request, HttpServletResponse response,
+                             @RequestBody PingRequest pingRequest) throws IOException {
         if (pingRequest.lastPingTime != null && pingRequest.lastPingTime > 0) {
             metricsService.capturePing(pingRequest.lastPingTime);
         }
 
         PingResponse pingResponse = new PingResponse();
-
         setSessionDetails(request, pingResponse);
-
         return pingResponse;
     }
 

@@ -1,20 +1,21 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.ConflictException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
-import com.github.onsdigital.zebedee.session.model.Session;
 import com.github.onsdigital.zebedee.persistence.model.CollectionHistoryEvent;
+import com.github.onsdigital.zebedee.session.model.Session;
 import org.apache.commons.lang3.BooleanUtils;
-import org.eclipse.jetty.http.HttpStatus;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.POST;
 import java.io.IOException;
 
 import static com.github.onsdigital.zebedee.persistence.CollectionEventType.COLLECTION_MANUAL_PUBLISHED_FAILURE;
@@ -22,7 +23,7 @@ import static com.github.onsdigital.zebedee.persistence.CollectionEventType.COLL
 import static com.github.onsdigital.zebedee.persistence.CollectionEventType.COLLECTION_MANUAL_PUBLISHED_TRIGGERED;
 import static com.github.onsdigital.zebedee.persistence.dao.CollectionHistoryDaoFactory.getCollectionHistoryDao;
 
-@Api
+@RestController
 public class Publish {
 
     /**
@@ -41,11 +42,11 @@ public class Publish {
      * @throws UnauthorizedException
      * @throws ConflictException
      */
-    @POST
-    public boolean publish(HttpServletRequest request, HttpServletResponse response)
+    @RequestMapping(value = "/publish/{collectionID}", method = RequestMethod.POST)
+    public boolean publish(HttpServletRequest request, HttpServletResponse response, @PathVariable String collectionID)
             throws IOException, ZebedeeException {
 
-        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
+        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(collectionID);
         Session session = Root.zebedee.getSessionsService().get(request);
 
         getCollectionHistoryDao().saveCollectionHistoryEvent(collection, session, COLLECTION_MANUAL_PUBLISHED_TRIGGERED);

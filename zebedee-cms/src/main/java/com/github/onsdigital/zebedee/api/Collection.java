@@ -1,6 +1,5 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.exceptions.ConflictException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
@@ -11,17 +10,18 @@ import com.github.onsdigital.zebedee.json.CollectionType;
 import com.github.onsdigital.zebedee.json.Keyring;
 import com.github.onsdigital.zebedee.session.model.Session;
 import org.apache.commons.lang3.StringUtils;
-import org.eclipse.jetty.http.HttpStatus;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
 import java.io.IOException;
 
-@Api
+@RestController("/collection")
 public class Collection {
 
     /**
@@ -34,12 +34,12 @@ public class Collection {
      * @return the CollectionDescription.
      * @throws IOException
      */
-    @GET
-    public CollectionDescription get(HttpServletRequest request, HttpServletResponse response)
-            throws IOException, ZebedeeException {
+    @RequestMapping(value = "/collection/{collectionID}")
+    public CollectionDescription get(HttpServletRequest request, HttpServletResponse response,
+                                     @PathVariable String collectionID) throws IOException, ZebedeeException {
 
         com.github.onsdigital.zebedee.model.Collection collection = Collections
-                .getCollection(request);
+                .getCollection(collectionID);
 
         // Check whether we found the collection:
         if (collection == null) {
@@ -84,13 +84,13 @@ public class Collection {
      * @return
      * @throws IOException
      */
-    @POST
-    public CollectionDescription create(HttpServletRequest request,
-                                        HttpServletResponse response,
-                                        CollectionDescription collectionDescription) throws IOException, ZebedeeException {
+    @RequestMapping(value = "/collection", method = RequestMethod.POST)
+    public CollectionDescription create(HttpServletRequest request, HttpServletResponse response,
+                                        @RequestBody CollectionDescription collectionDescription) throws IOException,
+            ZebedeeException {
 
         if (StringUtils.isBlank(collectionDescription.name)) {
-            response.setStatus(HttpStatus.BAD_REQUEST_400);
+            response.setStatus(HttpStatus.BAD_REQUEST.value());
             return null;
         }
 
@@ -127,11 +127,9 @@ public class Collection {
         return collection.description;
     }
 
-    @PUT
-    public CollectionDescription update(
-            HttpServletRequest request,
-            HttpServletResponse response,
-            CollectionDescription collectionDescription
+    @RequestMapping(value = "/collection/{collectionID}", method = RequestMethod.PUT)
+    public CollectionDescription update(HttpServletRequest request, HttpServletResponse response,
+                                        @RequestBody CollectionDescription collectionDescription
     ) throws IOException, ZebedeeException {
 
         Session session = Root.zebedee.getSessionsService().get(request);
@@ -139,7 +137,7 @@ public class Collection {
             throw new UnauthorizedException("You are not authorised to update collections.");
         }
 
-        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
+        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(collectionDescription.getId());
         com.github.onsdigital.zebedee.model.Collection updatedCollection = collection.update(
                 collection,
                 collectionDescription,
@@ -170,11 +168,11 @@ public class Collection {
      * @return
      * @throws IOException
      */
-    @DELETE
-    public boolean deleteCollection(HttpServletRequest request, HttpServletResponse response) throws IOException,
-            ZebedeeException {
+    @RequestMapping(value = "/collection/{collectionID}")
+    public boolean deleteCollection(HttpServletRequest request, HttpServletResponse response,
+                                    @PathVariable String collectionID) throws IOException, ZebedeeException {
 
-        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(request);
+        com.github.onsdigital.zebedee.model.Collection collection = Collections.getCollection(collectionID);
         Session session = Root.zebedee.getSessionsService().get(request);
 
         Root.zebedee.getCollections().delete(collection, session);

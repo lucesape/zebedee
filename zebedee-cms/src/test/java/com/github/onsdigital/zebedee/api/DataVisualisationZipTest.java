@@ -49,7 +49,7 @@ import static org.mockito.Mockito.when;
  */
 public class DataVisualisationZipTest {
 
-    private static final String ZIP_PATH_KEY = "zipPath";
+/*    private static final String ZIP_PATH_KEY = "zipPath";
     private static final String ZIP_PATH = "/data-visualisation/dataVis.zip";
     private static final String EXPECTED_PATH = "/data-visualisation/dataVis/unitTest.html";
     private static final String TEST_EMAIL = "hodor@gameOfThrones.com";
@@ -107,9 +107,9 @@ public class DataVisualisationZipTest {
         ReflectionTestUtils.setField(endpoint, "extractHtmlFilenames", extractHtmlFilenames);
     }
 
-    /**
+    *//**
      * Happy path test case.
-     */
+     *//*
     @Test
     public void shouldUnzipSuccessfully() throws Exception {
         when(mockRequest.getParameter(ZIP_PATH_KEY))
@@ -157,9 +157,9 @@ public class DataVisualisationZipTest {
         assertThat(response, is(equalTo(DataVisualisationZip.unzipSuccessResponse)));
     }
 
-    /**
+    *//**
      * Happy path test case for {@link DataVisualisationZip#deleteZipAndContent(HttpServletRequest, HttpServletResponse)}.
-     */
+     *//*
     @Test
     public void shouldDeleteZipAndContent() throws Exception {
         Session session = new Session();
@@ -180,11 +180,11 @@ public class DataVisualisationZipTest {
         verify(mockCollection, times(1)).deleteDataVisContent(session, Paths.get(ZIP_PATH));
     }
 
-    /**
+    *//**
      * Test verifies behaviour for cases where no zipPath parameter is provided.
      *
      * @throws Exception expected.
-     */
+     *//*
     @Test(expected = BadRequestException.class)
     public void shouldThrowBadRequestExWhenZipParamIsMissing() throws Exception {
         try {
@@ -199,11 +199,11 @@ public class DataVisualisationZipTest {
         }
     }
 
-    /**
+    *//**
      * Test verifies API behaves as expected in cases where an exception is thrown when trying to get the requested collection.
      *
      * @throws Exception expected.
-     */
+     *//*
     @Test(expected = UnexpectedErrorException.class)
     public void shouldThrowNotFoundExceptionForGetCollectionError() throws Exception {
         Session session = new Session();
@@ -228,10 +228,10 @@ public class DataVisualisationZipTest {
         }
     }
 
-    /**
+    *//**
      * Test verifies API behaves as expected in cases where an exception is thrown when there is an error while trying to
      * delete the data vis zip/content in the specified collection.
-     */
+     *//*
     @Test(expected = UnexpectedErrorException.class)
     public void shouldThrowUnexpectedErrorForErrorWhileDeletingContent() throws Exception {
         Session session = new Session();
@@ -263,5 +263,5 @@ public class DataVisualisationZipTest {
             ex.printStackTrace();
             throw ex;
         }
-    }
+    }*/
 }

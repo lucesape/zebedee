@@ -1,26 +1,25 @@
 package com.github.onsdigital.zebedee.api;
 
 import com.github.davidcarboni.httpino.Serialiser;
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
 import com.github.onsdigital.zebedee.exceptions.BadRequestException;
 import com.github.onsdigital.zebedee.exceptions.ConflictException;
 import com.github.onsdigital.zebedee.exceptions.NotFoundException;
 import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
+import com.github.onsdigital.zebedee.service.ServiceSupplier;
 import com.github.onsdigital.zebedee.session.model.Session;
 import com.github.onsdigital.zebedee.user.model.User;
 import com.github.onsdigital.zebedee.user.model.UserList;
 import com.github.onsdigital.zebedee.user.model.UserSanitised;
-import com.github.onsdigital.zebedee.service.ServiceSupplier;
 import com.github.onsdigital.zebedee.user.service.UsersService;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +27,7 @@ import java.util.List;
 /**
  * API for managing user accounts. For password management, see {@link Password}.
  */
-@Api
+@RestController
 public class Users {
 
     private static final String EMAIL_PARAM = "email";
@@ -41,7 +40,7 @@ public class Users {
 
     /**
      * Get a user or list of users
-     *
+     * <p>
      * Users are returned without password or keyring details
      *
      * @param request  For a single user, include an {@code ?email=...} parameter.
@@ -51,8 +50,9 @@ public class Users {
      * @throws NotFoundException   If the email is not found.
      * @throws BadRequestException If the email is blank.
      */
-    @GET
-    public Object read(HttpServletRequest request, HttpServletResponse response) throws IOException, NotFoundException, BadRequestException {
+    @RequestMapping(value = "/users", method = RequestMethod.GET)
+    public Object read(HttpServletRequest request, HttpServletResponse response)
+            throws IOException, NotFoundException, BadRequestException {
         Object result = null;
 
         String email = request.getParameter(EMAIL_PARAM);
@@ -72,7 +72,7 @@ public class Users {
 
     /**
      * Create a new user with basic info
-     *
+     * <p>
      * The user will be inactive until password details are assigned
      *
      * @param request  Expects session details.
@@ -84,8 +84,8 @@ public class Users {
      * @throws BadRequestException   If insufficient user information is given
      * @throws UnauthorizedException If the session does not have admin rights
      */
-    @POST
-    public UserSanitised create(HttpServletRequest request, HttpServletResponse response, User user) throws
+    @RequestMapping(value = "/users", method = RequestMethod.POST)
+    public UserSanitised create(HttpServletRequest request, HttpServletResponse response, @RequestBody User user) throws
             IOException, ConflictException, BadRequestException, UnauthorizedException {
         Session session = Root.zebedee.getSessionsService().get(request);
         User created = usersServiceSupplier.getService().create(session, user);
@@ -100,17 +100,17 @@ public class Users {
 
     /**
      * Update user details
-     *
+     * <p>
      * At present user email cannot be updated
      *
-     * @param request  Requires an admin session
-     * @param response The updated user
-     * @param updatedUser     A user object with the new details
+     * @param request     Requires an admin session
+     * @param response    The updated user
+     * @param updatedUser A user object with the new details
      * @return A sanitised view of the updated {@link User}
      */
-    @PUT
-    public UserSanitised update(HttpServletRequest request, HttpServletResponse response, User updatedUser) throws
-            IOException, NotFoundException, BadRequestException, UnauthorizedException {
+    @RequestMapping(value = "/users", method = RequestMethod.PUT)
+    public UserSanitised update(HttpServletRequest request, HttpServletResponse response, @RequestBody User updatedUser)
+            throws IOException, NotFoundException, BadRequestException, UnauthorizedException {
         Session session = Root.zebedee.getSessionsService().get(request);
 
         String email = request.getParameter(EMAIL_PARAM);
@@ -132,7 +132,7 @@ public class Users {
      * @param response Whether or not the user was deleted.
      * @return If the user was deleted, true.
      */
-    @DELETE
+    @RequestMapping(value = "/users", method = RequestMethod.DELETE)
     public boolean delete(HttpServletRequest request, HttpServletResponse response) throws
             UnauthorizedException, IOException, NotFoundException, BadRequestException {
 
@@ -140,7 +140,7 @@ public class Users {
         String email = request.getParameter(EMAIL_PARAM);
         User user = usersServiceSupplier.getService().getUserByEmail(email);
         boolean result = usersServiceSupplier.getService().delete(session, user);
-        if(result) {
+        if (result) {
             Audit.Event.USER_DELETED
                     .parameters()
                     .host(request)

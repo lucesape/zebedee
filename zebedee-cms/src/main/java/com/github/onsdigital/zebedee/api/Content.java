@@ -1,23 +1,27 @@
 package com.github.onsdigital.zebedee.api;
 
-import com.github.davidcarboni.restolino.framework.Api;
 import com.github.onsdigital.zebedee.audit.Audit;
-import com.github.onsdigital.zebedee.exceptions.*;
-import com.github.onsdigital.zebedee.session.model.Session;
+import com.github.onsdigital.zebedee.exceptions.BadRequestException;
+import com.github.onsdigital.zebedee.exceptions.ConflictException;
+import com.github.onsdigital.zebedee.exceptions.NotFoundException;
+import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
+import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.model.Collection;
 import com.github.onsdigital.zebedee.persistence.CollectionEventType;
 import com.github.onsdigital.zebedee.reader.Resource;
 import com.github.onsdigital.zebedee.reader.util.ReaderResponseResponseUtils;
 import com.github.onsdigital.zebedee.reader.util.RequestUtils;
+import com.github.onsdigital.zebedee.session.model.Session;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.lang.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -26,7 +30,7 @@ import java.nio.file.Paths;
 import static com.github.onsdigital.zebedee.persistence.CollectionEventType.COLLECTION_FILE_SAVED;
 import static com.github.onsdigital.zebedee.persistence.CollectionEventType.COLLECTION_PAGE_SAVED;
 
-@Api
+@RestController
 public class Content {
 
     private static final String DATA_JSON = "data.json";
@@ -44,7 +48,7 @@ public class Content {
      * @throws BadRequestException   IF the request cannot be completed because of a problem with request parameters
      * @throws UnauthorizedException If the user does not have viewer permission.
      */
-    @GET
+    @RequestMapping(value = "/content", method = RequestMethod.GET)
     public void read(HttpServletRequest request, HttpServletResponse response) throws IOException, ZebedeeException {
         try (Resource resource = RequestUtils.getResource(request)) {
             ReaderResponseResponseUtils.sendResponse(resource, response);
@@ -68,9 +72,9 @@ public class Content {
      * @throws ConflictException     If the URI is being edited in another collection
      * @throws NotFoundException     If the file cannot be edited for some other reason
      */
-    @POST
-    public boolean saveContent(HttpServletRequest request, HttpServletResponse response) throws IOException,
-            ZebedeeException, FileUploadException {
+    @RequestMapping(value = "/content/{collectionID}", method = RequestMethod.POST)
+    public boolean saveContent(HttpServletRequest request, HttpServletResponse response,
+                               @PathVariable String collectionID) throws IOException, ZebedeeException, FileUploadException {
 
         // We have to get the request InputStream before reading any request parameters
         // otherwise the call to get a request parameter will actually consume the body:
@@ -78,7 +82,7 @@ public class Content {
 
         Session session = Root.zebedee.getSessionsService().get(request);
 
-        Collection collection = Collections.getCollection(request);
+        Collection collection = Collections.getCollection(collectionID);
 
         String uri = request.getParameter("uri");
         Boolean overwriteExisting = BooleanUtils.toBoolean(StringUtils.defaultIfBlank(request.getParameter("overwriteExisting"), "true"));
@@ -121,13 +125,13 @@ public class Content {
      * @throws UnauthorizedException If the user does not have publisher permission.
      * @throws ConflictException     If the URI is being edited in another collection
      */
-    @DELETE
-    public boolean delete(HttpServletRequest request, HttpServletResponse response) throws IOException,
-            ZebedeeException {
+    @RequestMapping(value = "/content/{collectionID}", method = RequestMethod.DELETE)
+    public boolean delete(HttpServletRequest request, HttpServletResponse response, @PathVariable String collectionID)
+            throws IOException, ZebedeeException {
 
         Session session = Root.zebedee.getSessionsService().get(request);
 
-        Collection collection = Collections.getCollection(request);
+        Collection collection = Collections.getCollection(collectionID);
         String uri = request.getParameter("uri");
 
         boolean result = Root.zebedee.getCollections().deleteContent(collection, uri, session);
