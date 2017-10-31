@@ -11,6 +11,7 @@ import com.github.onsdigital.zebedee.exceptions.UnauthorizedException;
 import com.github.onsdigital.zebedee.exceptions.UnexpectedErrorException;
 import com.github.onsdigital.zebedee.exceptions.ZebedeeException;
 import com.github.onsdigital.zebedee.model.Collection;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 
@@ -43,6 +44,7 @@ public class ZebedeeLogBuilder extends LogMessageBuilder {
     private static final String PATH = "path";
     private static final String ROW = "row";
     private static final String CELL = "cell";
+    private static final String CDID = "cdid";
     private static final String BLOCKING_PATH = "blockingPath";
     private static final String BLOCKING_COLLECTION = "blockingCollection";
     private static final String TARGET_PATH = "targetPath";
@@ -188,6 +190,13 @@ public class ZebedeeLogBuilder extends LogMessageBuilder {
     public ZebedeeLogBuilder cell(Cell cell) {
         if (cell != null) {
             addParameter(CELL, cell.getColumnIndex());
+        }
+        return this;
+    }
+
+    public ZebedeeLogBuilder cdid(String cdid) {
+        if (StringUtils.isNotEmpty(cdid)) {
+            addParameter(CDID, cdid);
         }
         return this;
     }
