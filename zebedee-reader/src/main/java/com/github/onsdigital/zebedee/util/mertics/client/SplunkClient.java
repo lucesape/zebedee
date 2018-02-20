@@ -10,7 +10,6 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 import static com.github.onsdigital.zebedee.logging.ZebedeeReaderLogBuilder.logError;
@@ -45,18 +44,26 @@ public class SplunkClient {
     }
 
     /**
-     * Send a HTTP Collectiom Event to the Splunk instance.
+     * Asynchronously (fire and forget) send an HTTP Collection Event to the Splunk instance.
      *
      * @param uri            the URI to send the request to.
-     * @param requestMessage the {@link requestMessage} to send.
+     * @param splunkRequest  the {@link SplunkRequest} to send.
      */
-    public Future send(final String uri, final SplunkRequest splunkRequest) {
-        return pool.submit(() -> {
-            ResponseMessage responseMessage = splunkService.send(uri, splunkRequest);
-            if (responseMessage == null || HttpStatus.SC_OK != responseMessage.getStatus()) {
-                errorResponseHandler.accept(responseMessage);
-            }
-        });
+    public void send(final String uri, final SplunkRequest splunkRequest) {
+        pool.execute(() -> sendSplunkEvent(uri, splunkRequest));
+    }
+
+    /**
+     * Send an HTTP Collection Event to the Splunk instance.
+     *
+     * @param uri            the URI to send the request to.
+     * @param splunkRequest  the {@link SplunkRequest} to send.
+     */
+    public void sendSplunkEvent(final String uri, final SplunkRequest splunkRequest) {
+        ResponseMessage responseMessage = splunkService.send(uri, splunkRequest);
+        if (responseMessage == null || HttpStatus.SC_OK != responseMessage.getStatus()) {
+            errorResponseHandler.accept(responseMessage);
+        }
     }
 
     private String parseResponse(ResponseMessage responseMessage) {

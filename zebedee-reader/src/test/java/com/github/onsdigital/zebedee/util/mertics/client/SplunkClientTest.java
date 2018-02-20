@@ -9,7 +9,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 import static org.mockito.Mockito.never;
@@ -60,8 +59,7 @@ public class SplunkClientTest extends AbstractMetricsTest {
         when(responseMessageMock.getStatus())
                 .thenReturn(HttpStatus.SC_OK);
 
-        Future future = client.send(SPLUNK_HEC_URI, splunkRequestMock);
-        future.get();
+        client.sendSplunkEvent(SPLUNK_HEC_URI, splunkRequestMock);
 
         verify(splunkServiceMock, times(1)).send(SPLUNK_HEC_URI, splunkRequestMock);
         verify(splunkErrorHandler, never()).accept(responseMessageMock);
@@ -78,8 +76,7 @@ public class SplunkClientTest extends AbstractMetricsTest {
         when(responseMessageMock.getStatus())
                 .thenReturn(HttpStatus.SC_INTERNAL_SERVER_ERROR);
 
-        Future future = client.send(SPLUNK_HEC_URI, splunkRequestMock);
-        future.get();
+        client.sendSplunkEvent(SPLUNK_HEC_URI, splunkRequestMock);
 
         verify(splunkServiceMock, times(1)).send(SPLUNK_HEC_URI, splunkRequestMock);
         verify(splunkErrorHandler, times(1)).accept(responseMessageMock);
@@ -93,8 +90,7 @@ public class SplunkClientTest extends AbstractMetricsTest {
         when(splunkServiceMock.send(SPLUNK_HEC_URI, splunkRequestMock))
                 .thenReturn(null);
 
-        Future future = client.send(SPLUNK_HEC_URI, splunkRequestMock);
-        future.get();
+        client.sendSplunkEvent(SPLUNK_HEC_URI, splunkRequestMock);
 
         verify(splunkServiceMock, times(1)).send(SPLUNK_HEC_URI, splunkRequestMock);
         verify(splunkErrorHandler, times(1)).accept(null);
