@@ -20,8 +20,9 @@ import static com.github.onsdigital.zebedee.logging.ZebedeeReaderLogBuilder.logW
  */
 public class SplunkClient {
 
-    protected static ExecutorService pool = Executors.newSingleThreadExecutor();
     private static final String UNEXPECTED_RESPONSE_CODE = "Unexpected HTTP response code";
+
+    protected static ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 
     private Service splunkService = null;
     private Args serviceArgs = null;
