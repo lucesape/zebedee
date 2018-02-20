@@ -8,8 +8,7 @@ import org.apache.http.HttpStatus;
 
 import java.io.IOException;
 import java.io.StringWriter;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 
 import static com.github.onsdigital.zebedee.logging.ZebedeeReaderLogBuilder.logError;
@@ -22,7 +21,9 @@ public class SplunkClient {
 
     private static final String UNEXPECTED_RESPONSE_CODE = "Unexpected HTTP response code";
 
-    protected static ExecutorService pool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    final static BlockingQueue<Runnable> queue = new ArrayBlockingQueue<>(100);
+
+    protected static ExecutorService pool = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), Runtime.getRuntime().availableProcessors(), 0L, TimeUnit.MILLISECONDS, queue);
 
     private Service splunkService = null;
     private Args serviceArgs = null;
